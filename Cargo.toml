@@ -1,0 +1,21 @@
+[package]
+name = "hydra-merge"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "hydra_merge"
+path = "src/lib.rs"
+
+[[bin]]
+name = "hydra-merge"
+path = "src/main.rs"
+
+[dependencies]
+eframe = { version = "=0.36.2", default-features = false, features = ["default_fonts", "glow", "accesskit"] }
+
+[dev-dependencies]
+tempfile = "3"
+# Renders the window offscreen to PNG in tests (no screen access needed). Not linked into the app.
+egui_kittest = { version = "=0.36.2", features = ["eframe", "wgpu", "snapshot"] }
