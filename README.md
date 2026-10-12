@@ -22,7 +22,8 @@ cargo build --release && target/release/hydra-merge
 
 Needs Rust stable (edition 2021, built with 1.99) and git 2.20+. The app is a native window: it runs no server
 and has no command-line flags. A release build for this machine is `cargo build --release`. Every push to `main`
-builds the six release binaries and uploads them as GitHub Actions artifacts:
+builds the six release binaries and uploads them as GitHub Actions artifacts. A tag `v*` publishes
+those binaries on a GitHub Release:
 
 | OS | x86_64 | arm64 |
 |---|---|---|
@@ -38,7 +39,7 @@ program. The folder picker uses the system dialog (`osascript`, `zenity`/`kdialo
 
 | Variable | Meaning | Default |
 |---|---|---|
-| `HYDRA_MERGE_ROOTS` | discovery roots, separated by `:` on Unix and `;` on Windows (`~` is expanded, missing paths are skipped) | `~/repos:~/repos` |
+| `HYDRA_MERGE_ROOTS` | discovery roots, separated by `:` on Unix and `;` on Windows (`~` is expanded, missing paths are skipped) | `~/repos` |
 | `HYDRA_MERGE_SMERGE` | path to the `subl` executable, or the name `subl` on `PATH` | macOS: `/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl`; Linux: `subl`; Windows: `%ProgramFiles%\Sublime Text\subl.exe` |
 | `HYDRA_MERGE_TERMINAL` | program used by "Open in Terminal" (for example `iTerm`, `kitty`, `wt.exe`) | macOS `Terminal`, Linux `x-terminal-emulator`, Windows `wt.exe` |
 

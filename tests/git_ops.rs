@@ -787,10 +787,7 @@ fn config_from_values_defaults() {
     fs::create_dir_all(home.join("repos")).expect("mkdir");
     let config = Config::from_values(&home, None, None);
     let real = fs::canonicalize(&home).expect("canonicalize");
-    assert_eq!(
-        config.roots,
-        vec![real.join("repos"), real.join("repos")]
-    );
+    assert_eq!(config.roots, vec![real.join("repos")]);
     assert_eq!(config.smerge, hydra_merge::os::default_smerge());
     assert!(config.git_env.is_empty());
 }

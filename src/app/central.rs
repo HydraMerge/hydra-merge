@@ -19,7 +19,7 @@ impl WorktreeBarApp {
                 ui.allocate_rect(full, Sense::hover());
                 let Some(repo) = self.active_repo(repos).cloned() else {
                     let hint = if self.autoscan {
-                        "Repositories from ~/repos and ~/repos appear as tabs."
+                        "Repositories from ~/repos appear as tabs."
                     } else {
                         "Auto-scan is off. Use Rescan or Open path… in the ⋯ menu, or turn Auto on."
                     };

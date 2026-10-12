@@ -72,7 +72,7 @@
 2. **Обычный клиент не создаёт раскладку `.bare/` + `<branch>/`.**
 3. **Он не знает о `<repo_root>`.** Родительский каталог даёт `fatal: this operation must be run in a work tree`,
    `.bare` открывается как bare-репозиторий без рабочей копии. Нужна точка входа, которая открывает папку ветки.
-4. **Нет общего списка всех репозиториев с этой раскладкой** под `~/repos` и `~/repos`, с флагами «грязный» и
+4. **Нет общего списка всех репозиториев с этой раскладкой** под `~/repos`, с флагами «грязный» и
    «путь не совпадает с раскладкой».
 
 `hydra-merge` закрывает эти пункты и больше ничего не делает. Он не конвертирует обычные клоны, не делает
@@ -274,7 +274,7 @@ pub type AppResult<T> = Result<T, AppError>;
 
 ### 5.4 Обход discovery roots
 
-1. Корни — `config.roots` по порядку (по умолчанию `~/repos`, затем `~/repos`).
+1. Корни — `config.roots` по порядку (по умолчанию `~/repos`).
 2. Обход в ширину через `fs::read_dir` до глубины `MAX_DEPTH = 4`, корень — глубина 0.
    Ожидаемые находки: `~/repos/<group>/<repo>` (глубина 2) и `~/repos/<repo>` (глубина 1).
 3. Для каждого каталога `D` (включая корень):
@@ -283,7 +283,7 @@ pub type AppResult<T> = Result<T, AppError>;
    - иначе если есть `D/.git` (каталог или файл) — обычный клон: в автоматический список **не** попадает, обход внутрь не спускается;
    - иначе спуск в дочерние каталоги, кроме: имён из `SKIP_DIRS`, всех имён, начинающихся с `.`, и символических ссылок
      (`DirEntry::file_type()?.is_symlink()` → пропуск).
-4. Дедупликация по canonicalized `D`. `~/repos` лежит внутри `~/repos`, поэтому каждый repo root попадает один раз, с `name`
+4. Дедупликация по canonicalized `D`. Если один repo root виден из нескольких корней, он попадает один раз, с `name`
    относительно **первого** корня, где он найден.
 5. `io::Error` при чтении каталога пишется в stderr `warn: cannot scan <path>: <err>` и пропускается (скан не прерывается).
 6. Результат сортируется по `name.to_lowercase()`.
@@ -646,7 +646,7 @@ Git и smerge не вызываются в потоке UI.
 
 ### 9.1 Изоляция
 
-- Все репозитории создаются в `tempfile::TempDir`. `~/repos`, `~/repos`, `/Applications` и реальные репозитории не читаются и не меняются.
+- Все репозитории создаются в `tempfile::TempDir`. `~/repos`, `/Applications` и реальные репозитории не читаются и не меняются.
 - Переменные окружения процесса не меняются (`std::env::set_var` в тестах запрещён). Каждый тест строит
   `Config { roots: vec![<tmp canonicalized>], smerge: <tmp>/fake-smerge, git_env }` через `common::test_config(&tmp)`, где `git_env`:
   `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1`, `HOME=<tmp>/home`, `GIT_AUTHOR_NAME/EMAIL`, `GIT_COMMITTER_NAME/EMAIL`.
@@ -687,7 +687,7 @@ Git и smerge не вызываются в потоке UI.
 | `remove_bare_refused` | `remove_worktree(&config, <root>/.bare)` | `BareNotOpenable`; `.bare` на месте |
 | `path_outside_roots_refused` | `open_in_merge(&config, "/etc")`, путь в другом `TempDir` | `OutsideRoots` |
 | `plain_clone_marked_plain` | `open_path(&config, <tmp>/plain)`; затем `create_worktree` для его root | `Layout::Plain`, один worktree; create → `PlainLayout` |
-| `config_from_values_defaults` | `Config::from_values(<tmp>/home, None, None)` при созданных `<tmp>/home/repos` и `<tmp>/home/repos` | roots `~/repos`; smerge = `DEFAULT_SMERGE` |
+| `config_from_values_defaults` | `Config::from_values(<tmp>/home, None, None)` при созданном `<tmp>/home/repos` | roots = `<tmp>/home/repos`; smerge = `DEFAULT_SMERGE` |
 | `roots_are_temp_only` | `common::test_config` | каждый root лежит под `tmp`; ни один не равен и не лежит под настоящим `~/repos` |
 | `source_has_no_forbidden_git` | `include_str!` для `src/git.rs`, `src/discover.rs`, `src/model.rs` (строковые литералы, точное совпадение) и для всех `src/*.rs` (вызовы) | в первых трёх файлах нет литералов `"checkout"`, `"switch"`, `"reset"`, `"clean"`, `"merge"`, `"rebase"`, `"prune"`, `"--force"`, `"-f"`, `"-D"`, `"sh"`, `"-c"`; во всех `src/*.rs` нет `remove_dir_all`, `remove_file`, `git2` (тексты UI в `app.rs`, например «clean», под литеральную проверку не попадают). `commit`, `push`, `fetch`, `pull` разрешены как argv из §7.0 |
 
