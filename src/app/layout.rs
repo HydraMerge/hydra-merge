@@ -50,7 +50,7 @@ pub(super) fn pane_header(
     }
 }
 
-/// Three gray squares that pulse in turn, as HydraMerge shows loading.
+/// Three gray squares that pulse in turn while loading.
 pub(super) fn loading_dots(ui: &mut Ui, p: &Palette) {
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), 24.0), Sense::hover());
     let time = ui.input(|i| i.time) as f32;

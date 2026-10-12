@@ -1,4 +1,4 @@
-//! The Summary pane of the working copy, as HydraMerge shows it for "N unstaged files":
+//! The Summary pane of the working copy for "N unstaged files":
 //! a borderless commit message, the author line with the Commit button, and collapsible
 //! full-width sections of staged, unstaged and untracked files with their diffs.
 

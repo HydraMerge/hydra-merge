@@ -56,14 +56,7 @@
 
 ## 2. Опорные возможности
 
-| Возможность | Источник |
-|---|---|
-| Поддержка git worktrees, `core.worktree` | changelog: «Git worktrees are now supported», «Support for core.worktree» |
-| Список worktree и управление ими в Locations bar | changelog 2126+: «Added worktree management to the locations bar»; 2128 исправил пропадание main worktree |
-| Locations bar — это дерево. Ветки со `/` сгруппированы в папки, есть фильтр и счётчики ahead/behind | changelog |
-| Светлая и тёмная темы: `Merge.sublime-theme` и `Merge Dark.sublime-theme` | `Preferences.sublime-settings` |
-
-`smerge` не имеет подкоманды для worktree. Документированы только `smerge path|search|blame|log|mergetool`.
+Окно показывает репозитории с раскладкой bare + папка на ветку, дерево веток, историю, diff, светлую и тёмную тему. Внешний редактор открывает папку ветки и не управляет worktree.
 
 ## 3. Чего не хватает
 

@@ -1,5 +1,5 @@
 //! The commit list: a working-copy row on top, then commits with the branch graph, ref badges,
-//! author, date and file count, .
+//! author, date and file count.
 
 use eframe::egui::epaint::CubicBezierShape;
 
@@ -199,7 +199,7 @@ fn note_row(ui: &mut Ui, p: &Palette, text: &str) -> Option<Action> {
     None
 }
 
-/// The checked-out branch's tip stands out, as the bold subject does in HydraMerge.
+/// The checked-out branch's tip stands out.
 fn subject_color(p: &Palette, selected: bool, commit: &CommitLine) -> Color32 {
     let head = commit.refs.iter().any(|r| r.kind == RefKind::Head);
     match (selected, head) {

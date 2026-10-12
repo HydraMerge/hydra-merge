@@ -281,7 +281,7 @@ impl WorktreeBarApp {
                 .filter_map(|label| commands.iter().position(|c| &c.label == label && c.enabled))
                 .collect();
         }
-        // Commands that cannot run now are left out, as HydraMerge does.
+        // Commands that cannot run now are left out.
         let labels: Vec<&str> = commands
             .iter()
             .map(|c| if c.enabled { c.label.as_str() } else { "" })

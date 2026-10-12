@@ -301,7 +301,7 @@ impl WorktreeBarApp {
         self.chosen_stash = place.stash;
     }
 
-    /// The window title shows the open worktree, as HydraMerge shows the repository path.
+    /// The window title shows the open worktree path.
     pub(super) fn update_title(&mut self, ctx: &Context, repos: &[Repo]) {
         let title = self
             .active_repo(repos)

@@ -1,4 +1,4 @@
-//! Branch names grouped into folders by `/`, the way HydraMerge shows them. Pure, no egui.
+//! Branch names grouped into folders by `/`. Pure, no egui.
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum Node<'a> {

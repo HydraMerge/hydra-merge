@@ -302,7 +302,7 @@ pub(super) fn remove_confirm(wt: &Worktree) -> Action {
 
 /// The field in the middle: branch of the shown worktree with a clean/dirty dot.
 /// The field in the middle: `>_`, the branch of the shown worktree and a clean/modified dot.
-/// A click opens the command palette (⌘⇧P), as the field in HydraMerge does.
+/// A click opens the command palette (⌘⇧P).
 fn branch_field(ui: &mut Ui, p: &Palette, rect: Rect, wt: Option<&Worktree>) -> egui::Response {
     let response = ui
         .interact(rect, Id::new("branch-field"), Sense::click())

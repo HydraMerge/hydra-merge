@@ -23,7 +23,7 @@ pub struct CommitLine {
     pub hash: String,
     pub author: String,
     pub email: String,
-    /// `Fri, 2 Oct, 10:52`, as HydraMerge shows it.
+    /// `Fri, 2 Oct, 10:52`.
     pub date: String,
     /// Full hashes of the parents; two or more for a merge.
     pub parents: Vec<String>,
@@ -100,7 +100,7 @@ pub fn inspect_worktree(
     })
 }
 
-/// History of all branches, remotes and tags, as HydraMerge shows it.
+/// History of all branches, remotes and tags.
 fn read_log(config: &Config, cwd: &Path) -> AppResult<Vec<CommitLine>> {
     read_log_with(config, cwd, &[])
 }
