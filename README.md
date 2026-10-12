@@ -22,8 +22,7 @@ cargo build --release && target/release/hydra-merge
 
 Needs Rust stable (edition 2021, built with 1.99) and git 2.20+. The app is a native window: it runs no server
 and has no command-line flags. A release build for this machine is `cargo build --release`. Every push to `main`
-builds the six release binaries and uploads them as GitHub Actions artifacts. A tag `v*` publishes
-those binaries on a GitHub Release:
+builds the six release binaries and uploads them as GitHub Actions artifacts. A tag `v*` publishes them on a GitHub Release. The macOS archive is a zip of `HydraMerge.app`; Linux and Windows archives contain the `hydra-merge` binary:
 
 | OS | x86_64 | arm64 |
 |---|---|---|

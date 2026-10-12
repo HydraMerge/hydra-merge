@@ -45,13 +45,19 @@ jobs:
       - name: Pack
         shell: bash
         run: |
-          mkdir -p dist
-          cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" "dist/${{ matrix.bin }}"
-          tar -C dist -czf "hydra-merge-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" "${{ matrix.bin }}"
+          name="hydra-merge-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          if [[ "${{ matrix.target }}" == *apple-darwin ]]; then
+            sh scripts/package-macos-app.sh "target/${{ matrix.target }}/release/${{ matrix.bin }}" "${GITHUB_REF_NAME#v}"
+            ditto -c -k --keepParent HydraMerge.app "${name}.zip"
+          else
+            mkdir -p dist
+            cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" "dist/${{ matrix.bin }}"
+            tar -C dist -czf "${name}.tar.gz" "${{ matrix.bin }}"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: hydra-merge-${{ matrix.target }}
-          path: hydra-merge-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          path: hydra-merge-${{ github.ref_name }}-${{ matrix.target }}.*
           if-no-files-found: error
 
   publish:
@@ -69,7 +75,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" dist/*.tar.gz \
+          gh release create "${GITHUB_REF_NAME}" dist/* \
             --repo "${GITHUB_REPOSITORY}" \
             --title "${GITHUB_REF_NAME}" \
-            --notes "Release binaries for macOS, Linux and Windows, x86_64 and arm64."
+            --notes "macOS archives contain HydraMerge.app. Linux and Windows archives contain the hydra-merge binary. x86_64 and arm64."
