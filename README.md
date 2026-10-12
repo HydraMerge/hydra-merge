@@ -1,5 +1,7 @@
 # HydraMerge
 
+![HydraMerge](assets/logo.png)
+
 Desktop app (Rust, `eframe`/`egui`) for repositories laid out as "bare + one folder per branch",
 on the current macOS, Windows and Linux, each as x86_64 and arm64.
 It lists every such repository under the discovery roots, shows history,

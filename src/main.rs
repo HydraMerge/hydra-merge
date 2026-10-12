@@ -15,7 +15,11 @@ fn main() -> eframe::Result<()> {
     let viewport = ViewportBuilder::default()
         .with_title(WINDOW_TITLE)
         .with_inner_size([1100.0, 680.0])
-        .with_min_inner_size([760.0, 440.0]);
+        .with_min_inner_size([760.0, 440.0])
+        .with_icon(
+            eframe::icon_data::from_png_bytes(include_bytes!("../assets/logo.png"))
+                .expect("assets/logo.png"),
+        );
     let viewport = match saved {
         Some([x, y, w, h]) => viewport.with_position([x, y]).with_inner_size([w, h]),
         None => viewport,
