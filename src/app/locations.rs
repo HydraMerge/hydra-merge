@@ -16,7 +16,12 @@ impl WorktreeBarApp {
             .resizable(true)
             .default_size(REPOS_DEFAULT_WIDTH)
             .min_size(REPOS_MIN_WIDTH)
-            .frame(panel_frame(p.sidebar_bg).inner_margin(0))
+            .frame(panel_frame(p.sidebar_bg).inner_margin(Margin {
+                left: 0,
+                right: COLUMN_GAP,
+                top: 0,
+                bottom: 0,
+            }))
             .show(ui, |ui| {
                 ui.visuals_mut().widgets.noninteractive.fg_stroke.color = p.sidebar_fg;
                 let rect = column_header(ui, p, "Repositories");
@@ -68,7 +73,12 @@ impl WorktreeBarApp {
             .resizable(true)
             .default_size(LOCATIONS_DEFAULT_WIDTH)
             .min_size(LOCATIONS_MIN_WIDTH)
-            .frame(panel_frame(p.sidebar_bg).inner_margin(0))
+            .frame(panel_frame(p.sidebar_bg).inner_margin(Margin {
+                left: 0,
+                right: COLUMN_GAP,
+                top: 0,
+                bottom: 0,
+            }))
             .show(ui, |ui| {
                 ui.visuals_mut().widgets.noninteractive.fg_stroke.color = p.sidebar_fg;
                 ui.visuals_mut().indent_has_left_vline = false;
@@ -678,9 +688,15 @@ fn column_header(ui: &mut Ui, p: &Palette, title: &str) -> Rect {
     rect
 }
 
+/// Width of the dark strip between the left columns and the next pane.
+const COLUMN_GAP: i8 = 8;
+
 fn paint_column_edge(ui: &Ui, p: &Palette, rect: Rect) {
+    let gap = rect.right() - COLUMN_GAP as f32;
+    let gutter = Rect::from_min_max(pos2(gap, rect.top()), rect.right_bottom());
+    ui.painter().rect_filled(gutter, 0.0, p.bg);
     ui.painter()
-        .vline(rect.right(), rect.y_range(), Stroke::new(1.0, p.border));
+        .vline(gap, rect.y_range(), Stroke::new(1.0, p.border));
 }
 
 pub(super) fn location_row(
