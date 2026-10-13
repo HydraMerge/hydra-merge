@@ -54,6 +54,8 @@ const PANEL_MARGIN: i8 = 8;
 const STRIPE_WIDTH: f32 = 4.0;
 const LOCATIONS_DEFAULT_WIDTH: f32 = 220.0;
 const LOCATIONS_MIN_WIDTH: f32 = 160.0;
+const REPOS_DEFAULT_WIDTH: f32 = 200.0;
+const REPOS_MIN_WIDTH: f32 = 140.0;
 const ROW_HEIGHT: f32 = 21.0;
 const TAB_HEIGHT: f32 = 36.0;
 /// Wider graphs are clipped; their subjects still line up.
@@ -391,7 +393,7 @@ pub struct WorktreeBarApp {
     history_width: Option<f32>,
     /// Scroll the active tab into view on the next frame (it changed without a click).
     reveal_tab: bool,
-    /// Tabs closed with ×; the repositories stay known and the ▾ list shows them.
+    /// Repositories hidden from the top tab strip. They stay in the left list.
     closed_tabs: Vec<PathBuf>,
     locations_open: bool,
     /// The filter box under "Locations" is shown.
@@ -654,6 +656,7 @@ impl eframe::App for WorktreeBarApp {
         actions.extend(self.tab_bar(ui, p, &repos));
         actions.extend(self.toolbar(ui, p, &repos));
         actions.extend(self.bottom_bar(ui, p));
+        actions.extend(self.repo_sidebar(ui, p, &repos));
         if self.locations_open {
             actions.extend(self.locations(ui, p, &repos));
         }

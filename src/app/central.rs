@@ -26,7 +26,7 @@ impl WorktreeBarApp {
                         .collect::<Vec<_>>()
                         .join(", ");
                     let hint = if self.autoscan {
-                        format!("Repositories under {roots} appear as tabs.")
+                        format!("Repositories under {roots} are listed on the left. Open one to show it here.")
                     } else {
                         "Auto-scan is off. Use Rescan or Scan Folder… in Settings, or turn Scan at Startup on.".to_string()
                     };

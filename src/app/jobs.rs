@@ -399,7 +399,27 @@ impl WorktreeBarApp {
                     .as_deref()
                     .is_some_and(|p| find_selectable(&snapshot, p));
                 self.selected = if keep { self.selected.take() } else { None };
+                let already_open: Vec<PathBuf> = self
+                    .repos
+                    .iter()
+                    .filter(|repo| !self.closed_tabs.contains(&repo.root))
+                    .map(|repo| repo.root.clone())
+                    .collect();
+                let restored = self
+                    .pending_restore
+                    .as_ref()
+                    .and_then(|(root, _)| root.clone());
                 self.repos = snapshot;
+                self.closed_tabs
+                    .retain(|root| self.repos.iter().any(|repo| &repo.root == root));
+                for repo in self.repos.iter() {
+                    let stay = already_open.iter().any(|root| root == &repo.root)
+                        || restored.as_ref() == Some(&repo.root)
+                        || self.active_root.as_ref() == Some(&repo.root);
+                    if !stay && !self.closed_tabs.contains(&repo.root) {
+                        self.closed_tabs.push(repo.root.clone());
+                    }
+                }
                 self.branches = None;
                 self.view = None;
                 self.invalidate();

@@ -5,6 +5,52 @@ use super::tree::{build_tree, Node};
 use super::*;
 
 impl WorktreeBarApp {
+    /// Every scanned repository, top to bottom. A click opens it as a top tab.
+    pub(super) fn repo_sidebar(
+        &mut self,
+        ui: &mut Ui,
+        p: &Palette,
+        repos: &[Repo],
+    ) -> Option<Action> {
+        let frame = panel_frame(p.sidebar_bg);
+        Panel::left("repositories")
+            .resizable(true)
+            .default_size(REPOS_DEFAULT_WIDTH)
+            .min_size(REPOS_MIN_WIDTH)
+            .frame(frame)
+            .show(ui, |ui| {
+                ui.visuals_mut().widgets.noninteractive.fg_stroke.color = p.sidebar_fg;
+                section_title(ui, p, &format!("REPOSITORIES ({})", repos.len()));
+                if repos.is_empty() {
+                    ui.label(RichText::new("Nothing scanned yet").color(p.text_muted));
+                    return None;
+                }
+                ScrollArea::vertical()
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        let mut picked = None;
+                        for repo in repos {
+                            let active = self.active_root.as_ref() == Some(&repo.root);
+                            let open = !self.closed_tabs.contains(&repo.root);
+                            let marks = if open && !active {
+                                vec![p.accent]
+                            } else {
+                                Vec::new()
+                            };
+                            let label = tab_label(repos, repo);
+                            let response = location_row(ui, p, &label, active, &marks)
+                                .on_hover_text(repo.root.display().to_string());
+                            if response.clicked() {
+                                picked = Some(Action::Activate(repo.root.clone()));
+                            }
+                        }
+                        picked
+                    })
+                    .inner
+            })
+            .inner
+    }
+
     pub(super) fn locations(&mut self, ui: &mut Ui, p: &Palette, repos: &[Repo]) -> Option<Action> {
         let frame = panel_frame(p.sidebar_bg);
         Panel::left("locations")

@@ -3,8 +3,8 @@
 
 use super::*;
 
-/// Width of the ▾ and + buttons at the right end of the tab bar.
-const TAB_TOOLS: f32 = 56.0;
+/// Width of the + button at the right end of the tab bar.
+const TAB_TOOLS: f32 = 28.0;
 /// Folder icon, gaps and the close cross around the tab text.
 const TAB_CHROME: f32 = 52.0;
 const TAB_MIN_WIDTH: f32 = 80.0;
@@ -40,29 +40,10 @@ impl WorktreeBarApp {
                     if icon_button(ui, p, Icon::Plus, "Open a repository by path").clicked() {
                         out.push(Action::OpenRepoDialog);
                     }
-                    out.extend(self.repo_menu(ui, p, repos));
                 });
             });
         });
         out
-    }
-
-    /// Every repository, including closed tabs; picking one reopens its tab.
-    fn repo_menu(&self, ui: &mut Ui, p: &Palette, repos: &[Repo]) -> Option<Action> {
-        let mut picked = None;
-        let button = icon_button(ui, p, Icon::Chevron, "All repositories");
-        egui::Popup::menu(&button).show(|ui| {
-            ScrollArea::vertical().max_height(420.0).show(ui, |ui| {
-                for repo in repos {
-                    let active = self.active_root.as_ref() == Some(&repo.root);
-                    if ui.selectable_label(active, &repo.name).clicked() {
-                        picked = Some(Action::Activate(repo.root.clone()));
-                        ui.close();
-                    }
-                }
-            });
-        });
-        picked
     }
 
     pub(super) fn repo_tabs(&mut self, ui: &mut Ui, p: &Palette, repos: &[Repo]) -> Vec<Action> {
@@ -72,7 +53,7 @@ impl WorktreeBarApp {
             .collect();
         if shown.is_empty() {
             ui.add_space(8.0);
-            ui.label(RichText::new("No repositories").color(p.header_fg));
+            ui.label(RichText::new("No open repositories").color(p.header_fg));
             return Vec::new();
         }
         // No scroll bar. A mouse wheel turns vertical steps into horizontal
@@ -148,7 +129,6 @@ pub(super) enum Icon {
     /// A window with its left column filled: show or hide Locations.
     Sidebar,
     More,
-    Chevron,
     Plus,
     Back,
     Forward,
@@ -255,14 +235,6 @@ pub(super) fn paint_icon(ui: &Ui, p: &Palette, rect: Rect, icon: Icon) {
             for dx in [-5.0, 0.0, 5.0] {
                 painter.circle_filled(c + vec2(dx, 0.0), 1.6, color);
             }
-        }
-        Icon::Chevron => {
-            let points = vec![
-                c + vec2(-4.0, -2.0),
-                c + vec2(4.0, -2.0),
-                c + vec2(0.0, 3.0),
-            ];
-            painter.add(egui::Shape::convex_polygon(points, color, Stroke::NONE));
         }
         Icon::Back | Icon::Forward | Icon::Prompt => paint_nav_icon(painter, c, icon, color),
         Icon::Plus => {
