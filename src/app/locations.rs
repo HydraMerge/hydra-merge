@@ -12,15 +12,24 @@ impl WorktreeBarApp {
         p: &Palette,
         repos: &[Repo],
     ) -> Option<Action> {
-        let frame = panel_frame(p.sidebar_bg);
-        Panel::left("repositories")
+        let shown = Panel::left("repositories")
             .resizable(true)
             .default_size(REPOS_DEFAULT_WIDTH)
             .min_size(REPOS_MIN_WIDTH)
-            .frame(frame)
+            .frame(panel_frame(p.sidebar_bg).inner_margin(0))
             .show(ui, |ui| {
                 ui.visuals_mut().widgets.noninteractive.fg_stroke.color = p.sidebar_fg;
-                section_title(ui, p, &format!("REPOSITORIES ({})", repos.len()));
+                let rect = column_header(ui, p, "Repositories");
+                ui.painter().text(
+                    pos2(rect.right() - 10.0, rect.center().y),
+                    Align2::RIGHT_CENTER,
+                    repos.len().to_string(),
+                    FontId::proportional(12.0),
+                    p.text_muted,
+                );
+                let body = Frame::new()
+                    .inner_margin(Margin::symmetric(8, 4))
+                    .show(ui, |ui| {
                 if repos.is_empty() {
                     ui.label(RichText::new("Nothing scanned yet").color(p.text_muted));
                     return None;
@@ -47,22 +56,27 @@ impl WorktreeBarApp {
                         picked
                     })
                     .inner
-            })
-            .inner
+                    });
+                body.inner
+            });
+        paint_column_edge(ui, p, shown.response.rect);
+        shown.inner
     }
 
     pub(super) fn locations(&mut self, ui: &mut Ui, p: &Palette, repos: &[Repo]) -> Option<Action> {
-        let frame = panel_frame(p.sidebar_bg);
-        Panel::left("locations")
+        let shown = Panel::left("locations")
             .resizable(true)
             .default_size(LOCATIONS_DEFAULT_WIDTH)
             .min_size(LOCATIONS_MIN_WIDTH)
-            .frame(frame)
+            .frame(panel_frame(p.sidebar_bg).inner_margin(0))
             .show(ui, |ui| {
                 ui.visuals_mut().widgets.noninteractive.fg_stroke.color = p.sidebar_fg;
                 ui.visuals_mut().indent_has_left_vline = false;
                 ui.visuals_mut().widgets.inactive.fg_stroke.color = p.sidebar_fg;
                 self.locations_header(ui, p);
+                Frame::new()
+                    .inner_margin(Margin::symmetric(8, 4))
+                    .show(ui, |ui| {
                 if self.search_open || !self.query.is_empty() {
                     ui.scope(|ui| {
                         ui.visuals_mut().extreme_bg_color = p.input_bg;
@@ -89,21 +103,16 @@ impl WorktreeBarApp {
                         }
                     })
                     .inner
-            })
-            .inner
+                    })
+                    .inner
+            });
+        paint_column_edge(ui, p, shown.response.rect);
+        shown.inner
     }
 
-    /// "Locations" centred with a search icon on the right.
+    /// Same band as Repositories: title on the left, search on the right.
     fn locations_header(&mut self, ui: &mut Ui, p: &Palette) {
-        let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), 20.0), Sense::hover());
-        let font = FontId::proportional(12.0);
-        ui.painter().text(
-            rect.center(),
-            Align2::CENTER_CENTER,
-            "Locations",
-            font,
-            p.sidebar_fg,
-        );
+        let rect = column_header(ui, p, "Locations");
         let icon =
             Rect::from_center_size(pos2(rect.right() - 8.0, rect.center().y), vec2(16.0, 16.0));
         let response = ui
@@ -141,10 +150,10 @@ impl WorktreeBarApp {
         let Some(list) = list else {
             if crate::trust::is_blocked(&self.config, repo) {
                 // Not read at all, so there is no count to show.
-                section_title(ui, p, "BRANCHES");
+                section_title(ui, p, "Branches");
                 ui.label(RichText::new("Not trusted").color(p.text_muted));
             } else {
-                section_header(ui, p, "BRANCHES", 0);
+                section_header(ui, p, "Branches", 0);
                 super::layout::loading_dots(ui, p);
             }
             return worktrees;
@@ -172,7 +181,7 @@ impl WorktreeBarApp {
             .collect();
         let id = Id::new(("branches", &repo.root));
         let searching = !query.is_empty();
-        section(ui, p, id, "BRANCHES", names.len(), searching, |ui| {
+        section(ui, p, id, "Branches", names.len(), searching, |ui| {
             let mut leaf = |ui: &mut Ui, label: &str, full: &str| {
                 self.local_leaf(ui, p, repo, list, label, full)
             };
@@ -257,7 +266,7 @@ impl WorktreeBarApp {
         let count: usize = shown.iter().map(|(_, branches)| branches.len()).sum();
         let id = Id::new(("remotes", &repo.root));
         let searching = !query.is_empty();
-        section(ui, p, id, "REMOTES", count, searching, |ui| {
+        section(ui, p, id, "Remotes", count, searching, |ui| {
             let mut action = None;
             for (remote, branches) in &shown {
                 let text =
@@ -364,7 +373,7 @@ impl WorktreeBarApp {
             .filter(|tag| name_matches(&tag.name, query))
             .collect();
         let id = Id::new(("tags", &repo.root));
-        section(ui, p, id, "TAGS", tags.len(), !query.is_empty(), |ui| {
+        section(ui, p, id, "Tags", tags.len(), !query.is_empty(), |ui| {
             first(tags.iter().map(|tag| {
                 let selected = self
                     .chosen_tag
@@ -403,7 +412,7 @@ impl WorktreeBarApp {
             ui,
             p,
             id,
-            "STASHES",
+            "Stashes",
             stashes.len(),
             !query.is_empty(),
             |ui| {
@@ -443,7 +452,7 @@ impl WorktreeBarApp {
             ui,
             p,
             id,
-            "SUBMODULES",
+            "Submodules",
             items.len(),
             !query.is_empty(),
             |ui| {
@@ -478,7 +487,7 @@ impl WorktreeBarApp {
             ui,
             p,
             id,
-            "WORKTREES",
+            "Worktrees",
             worktrees.len(),
             !query.is_empty(),
             |ui| {
@@ -644,8 +653,34 @@ pub(super) fn section_header(ui: &mut Ui, p: &Palette, title: &str, count: usize
 /// A section heading as it is, for a list that has no count (yet).
 pub(super) fn section_title(ui: &mut Ui, p: &Palette, text: &str) {
     ui.add_space(8.0);
-    ui.label(RichText::new(text).small().color(p.sidebar_heading_fg));
+    ui.label(
+        RichText::new(text)
+            .size(12.0)
+            .strong()
+            .color(p.sidebar_heading_fg),
+    );
     ui.add_space(2.0);
+}
+
+/// Shared title band for the two left columns.
+fn column_header(ui: &mut Ui, p: &Palette, title: &str) -> Rect {
+    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), 32.0), Sense::hover());
+    ui.painter().rect_filled(rect, 0.0, p.header_bg);
+    ui.painter().text(
+        pos2(rect.left() + 12.0, rect.center().y),
+        Align2::LEFT_CENTER,
+        title,
+        FontId::proportional(13.0),
+        p.sidebar_fg,
+    );
+    ui.painter()
+        .hline(rect.x_range(), rect.bottom(), Stroke::new(1.0, p.border));
+    rect
+}
+
+fn paint_column_edge(ui: &Ui, p: &Palette, rect: Rect) {
+    ui.painter()
+        .vline(rect.right(), rect.y_range(), Stroke::new(1.0, p.border));
 }
 
 pub(super) fn location_row(
