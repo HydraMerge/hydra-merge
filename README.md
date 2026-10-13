@@ -94,17 +94,26 @@ program. The folder picker uses the system dialog (`osascript`, `zenity`/`kdialo
 - **Repository tabs** with a folder icon and ×, square and side by side, no scroll bar: the mouse wheel and the
   trackpad scroll them. ▾ lists all repositories and reopens closed tabs; + opens the Open Repository window.
 - **Toolbar**: Locations toggle, ◀ ▶ back / forward, the command palette field with the current branch and a
-  clean/modified dot, ⋯ for the shown worktree (Copy Worktree Path, Reveal in Finder, Open in <editor>,
-  Open in Terminal, Remove Worktree…), Fetch ↻ / Pull ↓ / Push ↑ / Open, and ⚙ settings (Rescan, Open Repository
-  by Path…, Scan at Startup, Fetch Automatically, theme, Open With, Skin).
+  clean/modified dot, ⋯ for the shown worktree, ↻ Fetch / ↓ Pull / ↑ Push / Open (icons only in a window
+  narrower than 1100 pt), and ⚙ settings (Rescan, Open Repository by Path…, Scan at Startup, Fetch Automatically,
+  theme, Open With, Skin).
+- **Worktree menu** (⋯ in the toolbar and right click on a worktree in Locations, the same list): Open in
+  <editor>, Open in Terminal, Reveal in Finder, Copy Path, Remove Worktree…. A Remove that cannot run says why
+  (has changes, locked, not trusted, plain clone).
+- **Repositories** column: every scanned repository; 🔍 or ⌘L filters it. An orange dot marks a repository with
+  uncommitted changes in some worktree, a blue dot one that is open as a tab.
+- **Worktree state** in Locations: a green dot (clean), orange dot (changes), triangle (folder is not at
+  `<repo_root>/<branch>`), padlock (locked), ring (status still being read). Names too long for the column are
+  shortened with `…` in the middle, so the end of a branch name stays visible.
 - **Locations**: Worktrees, Branches, Remotes, Tags, Stashes, Submodules. Sections collapse, branch names with
   `/` are grouped into folders, and a filter narrows the list. Right click offers what fits the item: create a
   worktree or local branch, compare, delete a remote branch, open, copy the name or path.
 - **Commit list**: commits of all branches with the branch graph (merges, lanes), ref badges (checked-out branch,
   local, remote, tag), author, date and file count. The top row is the working copy ("2 unstaged files").
   The history column is resized by dragging its divider. Right click a commit to copy its hash or subject.
-- **Summary** of the working copy: commit message, author from `git config`, Commit button, and collapsible
-  Staged / Unstaged / Untracked sections, each with its diff.
+- **Summary** of the working copy: commit message field, author from `git config`, Commit button (its tooltip says
+  what is missing), and collapsible Staged / Unstaged / Untracked sections, each with its diff. A clean worktree
+  shows a card instead: branch, path, HEAD, and Open in <editor> / Terminal / Finder / Copy Path.
 - **Commit view**: subject, author, hash, files and the patch.
 - **Diff**: line numbers, added and removed lines, syntax colours for common languages and config formats
   (Rust, Go, Python, JS/TS, YAML, HCL/Terraform, JSON, SQL, shell, …). Only visible lines are drawn.

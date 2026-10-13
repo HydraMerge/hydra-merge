@@ -101,11 +101,15 @@ impl WorktreeBarApp {
         &mut self,
         ui: &mut Ui,
         p: &Palette,
+        repo: &Repo,
         wt: &Worktree,
         data: &ViewData,
     ) -> Vec<Action> {
         let busy = self.busy();
         let files = &data.view.files;
+        if files.is_empty() {
+            return self.clean_card(ui, p, repo, wt);
+        }
         let staged: Vec<&FileChange> = files.iter().filter(|f| can_unstage(&f.code)).collect();
         let untracked: Vec<&FileChange> = files.iter().filter(|f| f.code == "??").collect();
         let unstaged: Vec<&FileChange> = files.iter().filter(|f| can_discard(&f.code)).collect();
@@ -119,14 +123,11 @@ impl WorktreeBarApp {
                 out.extend(self.group_section(ui, p, path, (index as u8, group), busy));
             }
         }
-        if files.is_empty() {
-            let clean = "Nothing to commit, working tree clean";
-            ui.label(RichText::new(clean).color(p.text_muted));
-        }
         out
     }
 
-    /// Borderless message, the author line, and the wide Commit button on its right.
+    /// The message in a framed field (it shares `detail_bg` with the pane in Merge Light, so a
+    /// borderless field was invisible), the author line, and the Commit button on its right.
     fn commit_box(
         &mut self,
         ui: &mut Ui,
@@ -136,16 +137,26 @@ impl WorktreeBarApp {
         staged: usize,
         busy: bool,
     ) -> Option<Action> {
-        ui.add_enabled(
-            !busy,
-            TextEdit::multiline(&mut self.commit_message)
-                .id_salt("commit-message")
-                .hint_text("Commit Message")
-                .font(TextStyle::Monospace)
-                .frame(Frame::NONE)
-                .desired_rows(3)
-                .desired_width(f32::INFINITY),
-        );
+        let id = Id::new("commit-message");
+        let focused = ui.memory(|m| m.has_focus(id));
+        let ring = if focused { p.focus_ring } else { p.border };
+        Frame::new()
+            .fill(p.input_bg)
+            .stroke(Stroke::new(1.0, ring))
+            .corner_radius(4.0)
+            .inner_margin(Margin::same(6))
+            .show(ui, |ui| {
+                ui.add_enabled(
+                    !busy,
+                    TextEdit::multiline(&mut self.commit_message)
+                        .id(id)
+                        .hint_text("Commit message")
+                        .font(TextStyle::Monospace)
+                        .frame(Frame::NONE)
+                        .desired_rows(3)
+                        .desired_width(f32::INFINITY),
+                );
+            });
         ui.add_space(6.0);
         ui.horizontal(|ui| {
             let author = view
@@ -155,22 +166,39 @@ impl WorktreeBarApp {
             ui.label(RichText::new(author).color(p.text_muted))
                 .on_hover_text(wt.path.display().to_string());
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                let label = match staged {
-                    0 => "Nothing to commit".to_string(),
-                    1 => "Commit 1 file".to_string(),
-                    n => format!("Commit {n} files"),
-                };
-                let ready = !busy && staged > 0 && !self.commit_message.trim().is_empty();
-                let button = Button::new(RichText::new(label).color(p.button_fg))
+                let blocker = commit_blocker(busy, staged, &self.commit_message);
+                let button = Button::new(RichText::new(commit_label(staged)).color(p.button_fg))
                     .fill(p.button_bg)
                     .min_size(vec2(COMMIT_BUTTON_WIDTH, 22.0));
-                ui.add_enabled(ready, button)
+                ui.add_enabled(blocker.is_none(), button)
+                    .on_disabled_hover_text(blocker.unwrap_or_default())
                     .clicked()
                     .then(|| Action::Commit(wt.path.clone()))
             })
             .inner
         })
         .inner
+    }
+}
+
+fn commit_label(staged: usize) -> String {
+    match staged {
+        0 => "Nothing to commit".to_string(),
+        1 => "Commit 1 file".to_string(),
+        n => format!("Commit {n} files"),
+    }
+}
+
+/// Why Commit is off, shown on hover; `None` when it can run.
+fn commit_blocker(busy: bool, staged: usize, message: &str) -> Option<&'static str> {
+    if busy {
+        Some("Wait for the running command")
+    } else if staged == 0 {
+        Some("Stage files first: Stage in a file row, or Stage All")
+    } else if message.trim().is_empty() {
+        Some("Enter a commit message")
+    } else {
+        None
     }
 }
 
@@ -373,4 +401,18 @@ fn count_badge(ui: &Ui, p: &Palette, left_center: Pos2, count: usize) {
     ui.painter().rect_filled(badge, 3.0, p.button_bg);
     ui.painter()
         .galley(badge.center() - galley.size() / 2.0, galley, p.text_strong);
+}
+
+#[cfg(test)]
+mod commit_tests {
+    use super::*;
+
+    #[test]
+    fn commit_says_what_is_missing() {
+        assert_eq!(commit_blocker(false, 0, "msg"), Some("Stage files first: Stage in a file row, or Stage All"));
+        assert_eq!(commit_blocker(false, 2, "  \n"), Some("Enter a commit message"));
+        assert_eq!(commit_blocker(true, 2, "msg"), Some("Wait for the running command"));
+        assert_eq!(commit_blocker(false, 2, "msg"), None);
+        assert_eq!(commit_label(2), "Commit 2 files");
+    }
 }

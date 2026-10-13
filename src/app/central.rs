@@ -136,7 +136,7 @@ impl WorktreeBarApp {
             commit_detail(ui, p, commit, self.patch.as_ref(), &wt.path);
             return Vec::new();
         }
-        self.summary_pane(ui, p, wt, data)
+        self.summary_pane(ui, p, repo, wt, data)
     }
 
     fn right_title(&self) -> &'static str {

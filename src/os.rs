@@ -103,21 +103,6 @@ pub fn reveal_in_file_manager() -> &'static str {
     }
 }
 
-pub fn show_in_file_manager() -> &'static str {
-    #[cfg(target_os = "macos")]
-    {
-        "Show in Finder"
-    }
-    #[cfg(windows)]
-    {
-        "Show in Explorer"
-    }
-    #[cfg(not(any(target_os = "macos", windows)))]
-    {
-        "Show in Files"
-    }
-}
-
 pub fn shortcut_palette() -> &'static str {
     #[cfg(target_os = "macos")]
     {
@@ -159,6 +144,17 @@ pub fn shortcut_log() -> &'static str {
     #[cfg(not(target_os = "macos"))]
     {
         "Ctrl+Shift+L"
+    }
+}
+
+pub fn shortcut_find_repo() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        "⌘L"
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        "Ctrl+L"
     }
 }
 

@@ -1,73 +1,12 @@
 //! Left panel: branches, remotes, tags, stashes, submodules and worktrees.
 
-use super::toolbar::remove_confirm;
+use super::toolbar::{menu_entries, worktree_entries};
+use super::elide::{fit, Elide};
 use super::tree::{build_tree, Node};
+use super::wt_status::{self, WtState};
 use super::*;
 
 impl WorktreeBarApp {
-    /// Every scanned repository, top to bottom. A click opens it as a top tab.
-    pub(super) fn repo_sidebar(
-        &mut self,
-        ui: &mut Ui,
-        p: &Palette,
-        repos: &[Repo],
-    ) -> Option<Action> {
-        let shown = Panel::left("repositories")
-            .resizable(true)
-            .default_size(REPOS_DEFAULT_WIDTH)
-            .min_size(REPOS_MIN_WIDTH)
-            .frame(panel_frame(p.sidebar_bg).inner_margin(Margin {
-                left: 0,
-                right: COLUMN_GAP,
-                top: 0,
-                bottom: 0,
-            }))
-            .show(ui, |ui| {
-                ui.visuals_mut().widgets.noninteractive.fg_stroke.color = p.sidebar_fg;
-                let rect = column_header(ui, p, "Repositories");
-                ui.painter().text(
-                    pos2(rect.right() - 10.0, rect.center().y),
-                    Align2::RIGHT_CENTER,
-                    repos.len().to_string(),
-                    FontId::proportional(12.0),
-                    p.text_muted,
-                );
-                let body = Frame::new()
-                    .inner_margin(Margin::symmetric(8, 4))
-                    .show(ui, |ui| {
-                if repos.is_empty() {
-                    ui.label(RichText::new("Nothing scanned yet").color(p.text_muted));
-                    return None;
-                }
-                ScrollArea::vertical()
-                    .auto_shrink([false, false])
-                    .show(ui, |ui| {
-                        let mut picked = None;
-                        for repo in repos {
-                            let active = self.active_root.as_ref() == Some(&repo.root);
-                            let open = !self.closed_tabs.contains(&repo.root);
-                            let marks = if open && !active {
-                                vec![p.accent]
-                            } else {
-                                Vec::new()
-                            };
-                            let label = tab_label(repos, repo);
-                            let response = location_row(ui, p, &label, active, &marks)
-                                .on_hover_text(repo.root.display().to_string());
-                            if response.clicked() {
-                                picked = Some(Action::Activate(repo.root.clone()));
-                            }
-                        }
-                        picked
-                    })
-                    .inner
-                    });
-                body.inner
-            });
-        paint_column_edge(ui, p, shown.response.rect);
-        shown.inner
-    }
-
     pub(super) fn locations(&mut self, ui: &mut Ui, p: &Palette, repos: &[Repo]) -> Option<Action> {
         let shown = Panel::left("locations")
             .resizable(true)
@@ -519,48 +458,25 @@ impl WorktreeBarApp {
     ) -> Option<Action> {
         let name = worktree_name(wt);
         let selected = self.selected.as_deref() == Some(wt.path.as_path());
-        let mut marks = Vec::new();
-        if wt.dirty == Some(true) || !wt.layout_correct {
-            marks.push(p.dirty);
-        }
-        let response = location_row(ui, p, &name, selected, &marks)
-            .on_hover_text(wt.path.display().to_string());
+        let state = wt_status::state_of(wt, repo.layout == Layout::Bare);
+        let tip = format!("{}\n{}", wt.path.display(), wt_status::describe(state));
+        let response = status_row(ui, p, &name, selected, &[], Some(state)).on_hover_text(tip);
         let mut menu = None;
         response.context_menu(|ui| menu = self.worktree_menu(ui, repo, wt));
         let clicked = response.clicked().then(|| Action::Select(wt.path.clone()));
         menu.or(clicked)
     }
 
-    /// Right click on a worktree: open it, copy its path, or remove it when that is allowed.
+    /// Right click on a worktree: the same commands, names and checks as ⋯ in the toolbar.
     fn worktree_menu(&self, ui: &mut Ui, repo: &Repo, wt: &Worktree) -> Option<Action> {
-        let busy = self.busy();
-        let can_remove =
-            !busy && repo.layout == Layout::Bare && wt.dirty == Some(false) && !wt.locked;
-        let path = wt.path.display().to_string();
-        let items = vec![
-            (
-                format!("Open in {}", self.editors.current.name()),
-                !busy,
-                Action::Open(wt.path.clone()),
-            ),
-            (
-                "Open in Terminal".to_string(),
-                !busy,
-                Action::OpenTerminal(wt.path.clone()),
-            ),
-            (
-                crate::os::show_in_file_manager().to_string(),
-                !busy,
-                Action::RevealInFinder(wt.path.clone()),
-            ),
-            (format!("Copy '{path}'"), true, Action::Copy(path.clone())),
-            (
-                "Remove Worktree…".to_string(),
-                can_remove,
-                remove_confirm(wt),
-            ),
-        ];
-        menu_items(ui, items)
+        let blocked = crate::trust::is_blocked(&self.config, repo);
+        let entries = worktree_entries(
+            self.busy(),
+            blocked,
+            Some((repo, wt)),
+            self.editors.current.name(),
+        );
+        menu_entries(ui, entries)
     }
 }
 
@@ -673,7 +589,7 @@ pub(super) fn section_title(ui: &mut Ui, p: &Palette, text: &str) {
 }
 
 /// Shared title band for the two left columns.
-fn column_header(ui: &mut Ui, p: &Palette, title: &str) -> Rect {
+pub(super) fn column_header(ui: &mut Ui, p: &Palette, title: &str) -> Rect {
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), 32.0), Sense::hover());
     ui.painter().rect_filled(rect, 0.0, p.header_bg);
     ui.painter().text(
@@ -689,9 +605,9 @@ fn column_header(ui: &mut Ui, p: &Palette, title: &str) -> Rect {
 }
 
 /// Width of the dark strip between the left columns and the next pane.
-const COLUMN_GAP: i8 = 8;
+pub(super) const COLUMN_GAP: i8 = 8;
 
-fn paint_column_edge(ui: &Ui, p: &Palette, rect: Rect) {
+pub(super) fn paint_column_edge(ui: &Ui, p: &Palette, rect: Rect) {
     let gap = rect.right() - COLUMN_GAP as f32;
     let gutter = Rect::from_min_max(pos2(gap, rect.top()), rect.right_bottom());
     ui.painter().rect_filled(gutter, 0.0, p.bg);
@@ -705,6 +621,19 @@ pub(super) fn location_row(
     label: &str,
     selected: bool,
     marks: &[Color32],
+) -> egui::Response {
+    status_row(ui, p, label, selected, marks, None)
+}
+
+/// A list row; `lead` puts a worktree state icon before the name. A name that does not fit is
+/// shortened with `…` (in the middle when it has `/`), and the full name goes to the tooltip.
+pub(super) fn status_row(
+    ui: &mut Ui,
+    p: &Palette,
+    label: &str,
+    selected: bool,
+    marks: &[Color32],
+    lead: Option<WtState>,
 ) -> egui::Response {
     let width = ui.available_width();
     let (rect, response) = ui.allocate_exact_size(Vec2::new(width, ROW_HEIGHT), Sense::click());
@@ -723,12 +652,21 @@ pub(super) fn location_row(
     } else {
         p.sidebar_fg
     };
-    let text_rect = rect.shrink2(Vec2::new(8.0, 1.0));
+    let mut text_rect = rect.shrink2(Vec2::new(8.0, 1.0));
+    if let Some(state) = lead {
+        let at = pos2(text_rect.left() + wt_status::ICON_WIDTH / 2.0 - 2.0, rect.center().y);
+        wt_status::paint(ui.painter(), p, at, state);
+        text_rect.min.x += wt_status::ICON_WIDTH + 2.0;
+    }
+    // Marks sit at the right end; the name stops before them.
+    text_rect.max.x -= marks.len() as f32 * 12.0;
+    let font = FontId::proportional(13.0);
+    let shown = fit(ui, label, &font, text_rect.width(), Elide::for_name(label));
     ui.painter().with_clip_rect(text_rect).text(
         text_rect.left_center(),
         Align2::LEFT_CENTER,
-        label,
-        FontId::proportional(13.0),
+        &shown,
+        font,
         color,
     );
     let mut x = rect.right() - 10.0;
@@ -737,5 +675,9 @@ pub(super) fn location_row(
         ui.painter().circle_filled(center, 3.5, *mark_color);
         x -= 12.0;
     }
+    if shown != label {
+        return response.on_hover_text(label);
+    }
     response
 }
+

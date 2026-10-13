@@ -5,6 +5,7 @@ use eframe::egui::epaint::CubicBezierShape;
 
 use super::history::{can_stage, can_unstage};
 use super::history_filter::commit_matches;
+use super::elide::{fit, Elide};
 use super::*;
 use crate::git::{RefKind, RefLabel};
 
@@ -302,12 +303,13 @@ fn line_text(
 ) {
     let ((x, line), (font, color)) = (at, style);
     let clip = Rect::from_min_max(pos2(x, rect.top()), pos2(right.max(x), rect.bottom()));
+    let shown = fit(ui, text, &font, (right - x).max(0.0), Elide::End);
     ui.painter()
         .with_clip_rect(clip.intersect(ui.clip_rect()))
         .text(
             pos2(x, line_y(rect, line)),
             Align2::LEFT_CENTER,
-            text,
+            shown,
             font,
             color,
         );

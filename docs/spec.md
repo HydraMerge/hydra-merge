@@ -538,7 +538,7 @@ pub fn parse_theme(s: &str) -> Option<ThemeChoice>;
 | `bg` | `#ffffff` | `#2c3035` | `commit_list_bg` = `light_gray` / `dark_gray-lightest` |
 | `text` | `#333333` | `#aaaaaa` | `text` |
 | `text_strong` | `#1a1a1a` | `#dddddd` | `dark_gray` / `text-heading` |
-| `text_muted` | `#8a8a8a` | `#737f8c` | `medium_gray` |
+| `text_muted` | `#5a636d` | `#939eaa` | `medium_gray`, затемнён (light) и осветлён (dark) до 4.5:1 (WCAG AA) на `bg`, `sidebar_bg`, `detail_bg`; держит тест `muted_text_meets_wcag_aa` |
 | `header_bg` | `#e6e6e6` | `#1e2124` | `header_bg` |
 | `header_fg` | `#333333` | `#dddddd` | `header_fg` |
 | `sidebar_bg` | `#f4f4f4` | `#25292d` | `side_bar_container_bg` |

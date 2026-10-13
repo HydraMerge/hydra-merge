@@ -124,7 +124,8 @@ pub const LIGHT: Palette = Palette {
     bg: hex(0xebedef),
     text: hex(0x404040),
     text_strong: hex(0x2e3338),
-    text_muted: hex(0x8a939c),
+    // 4.5:1 (WCAG AA) on bg, sidebar_bg and detail_bg: dates, authors and counts are small text.
+    text_muted: hex(0x5a636d),
     header_bg: hex(0xadb6bd),
     header_fg: hex(0x3c4246),
     sidebar_bg: hex(0xdddfe1),
@@ -186,7 +187,8 @@ pub const DARK: Palette = Palette {
     bg: hex(0x2c3035),
     text: hex(0xaaaaaa),
     text_strong: hex(0xdddddd),
-    text_muted: hex(0x737f8c),
+    // 4.5:1 (WCAG AA) on bg, sidebar_bg and detail_bg.
+    text_muted: hex(0x939eaa),
     header_bg: hex(0x16181b),
     header_fg: hex(0xdddddd),
     sidebar_bg: hex(0x25292d),
@@ -495,7 +497,7 @@ mod tests {
     #[rustfmt::skip]
     const SPEC: [(&str, u32, u32); 31] = [
         ("bg", 0xebedef, 0x2c3035), ("text", 0x404040, 0xaaaaaa), ("text_strong", 0x2e3338, 0xdddddd),
-        ("text_muted", 0x8a939c, 0x737f8c), ("header_bg", 0xadb6bd, 0x16181b),
+        ("text_muted", 0x5a636d, 0x939eaa), ("header_bg", 0xadb6bd, 0x16181b),
         ("header_fg", 0x3c4246, 0xdddddd), ("sidebar_bg", 0xdddfe1, 0x25292d),
         ("sidebar_fg", 0x505254, 0xaaaaaa), ("sidebar_heading_fg", 0x3c4246, 0xdddddd),
         ("row_hover_bg", 0xe0e4e7, 0x32383e), ("row_selected_bg", 0xd2e1ed, 0x435970),
@@ -539,6 +541,35 @@ mod tests {
                 contrast(p.pane_header_bg, p.bg) >= 15,
                 "pane strip vs active pane title"
             );
+        }
+    }
+
+    /// WCAG 2 relative luminance of an sRGB colour.
+    fn luminance(c: Color32) -> f32 {
+        let channel = |v: u8| {
+            let v = v as f32 / 255.0;
+            if v <= 0.03928 {
+                v / 12.92
+            } else {
+                ((v + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * channel(c.r()) + 0.7152 * channel(c.g()) + 0.0722 * channel(c.b())
+    }
+
+    fn contrast_ratio(a: Color32, b: Color32) -> f32 {
+        let (a, b) = (luminance(a), luminance(b));
+        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+    }
+
+    /// Dates, authors and counts are drawn in `text_muted` at 11-12 pt: AA asks 4.5:1 for them.
+    #[test]
+    fn muted_text_meets_wcag_aa() {
+        for (name, p) in [("light", &LIGHT), ("dark", &DARK)] {
+            for (ground, fill) in [("bg", p.bg), ("sidebar_bg", p.sidebar_bg), ("detail_bg", p.detail_bg)] {
+                let ratio = contrast_ratio(p.text_muted, fill);
+                assert!(ratio >= 4.5, "{name} text_muted on {ground}: {ratio:.2}");
+            }
         }
     }
 

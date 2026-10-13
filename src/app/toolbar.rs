@@ -7,8 +7,14 @@ use crate::trust::is_blocked;
 
 const TOOLBAR_HEIGHT: f32 = 26.0;
 const FIELD_WIDTH: f32 = 340.0;
-/// Room kept for the buttons on the right before the centred field.
-const RIGHT_TOOLS: f32 = 300.0;
+/// Room kept for the buttons on the right before the centred field: with labels, and with
+/// icons only once the window is narrower than `LABELS_FROM`.
+const RIGHT_TOOLS: f32 = 380.0;
+const RIGHT_TOOLS_COMPACT: f32 = 300.0;
+const LABELS_FROM: f32 = 1100.0;
+/// Below this channel distance from the toolbar a button fill does not read as a button
+/// (Merge Light: `button_bg` #ccd3d6 on `toolbar_bg` #c9cfd3 differ by 15).
+const MIN_BUTTON_STEP: i32 = 40;
 
 impl WorktreeBarApp {
     pub(super) fn toolbar(&mut self, ui: &mut Ui, p: &Palette, repos: &[Repo]) -> Vec<Action> {
@@ -19,6 +25,7 @@ impl WorktreeBarApp {
         let frame = Frame::new()
             .fill(p.toolbar_bg)
             .inner_margin(Margin::symmetric(8, 4));
+        self.panes.toolbar_compact = ui.available_width() < LABELS_FROM;
         let shown = Panel::top("toolbar").frame(frame).show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.set_min_height(TOOLBAR_HEIGHT);
@@ -31,7 +38,7 @@ impl WorktreeBarApp {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     out.extend(self.settings_menu(ui, p));
                     ui.add_space(4.0);
-                    out.extend(self.sync_tools(ui, wt.as_ref()));
+                    out.extend(self.sync_tools(ui, p, wt.as_ref()));
                 });
             });
         });
@@ -52,7 +59,12 @@ impl WorktreeBarApp {
         wt: Option<&(Repo, Worktree)>,
     ) -> Vec<Action> {
         let mut out = Vec::new();
-        let center = (ui.available_width() - RIGHT_TOOLS).max(0.0);
+        let right = if self.panes.toolbar_compact {
+            RIGHT_TOOLS_COMPACT
+        } else {
+            RIGHT_TOOLS
+        };
+        let center = (ui.available_width() - right).max(0.0);
         let (area, _) = ui.allocate_exact_size(vec2(center, TOOLBAR_HEIGHT), Sense::hover());
         let middle = ui
             .ctx()
@@ -89,7 +101,7 @@ impl WorktreeBarApp {
     /// Open, Push, Pull, Fetch (right to left), enabled for a selected worktree. Push, Pull and
     /// Fetch run git, so they wait while the repository is not trusted; Open only starts the
     /// editor.
-    fn sync_tools(&self, ui: &mut Ui, wt: Option<&(Repo, Worktree)>) -> Vec<Action> {
+    fn sync_tools(&self, ui: &mut Ui, p: &Palette, wt: Option<&(Repo, Worktree)>) -> Vec<Action> {
         let Some((repo, wt)) = wt else {
             return Vec::new();
         };
@@ -97,26 +109,26 @@ impl WorktreeBarApp {
         let blocked = is_blocked(&self.config, repo);
         let path = wt.path.clone();
         let open_hint = format!("Open in {} (⚙ → Open With)", self.editors.current.name());
-        // (label, hint, action, runs git)
+        // (icon, name, hint, action, runs git)
         let tools = [
-            (
-                "Open",
-                open_hint.as_str(),
-                Action::Open(path.clone()),
-                false,
-            ),
-            ("↑", "Push", Action::Push(path.clone()), true),
-            ("↓", "Pull", Action::Pull(path.clone()), true),
-            ("↻", "Fetch", Action::Fetch(path), true),
+            ("", "Open", open_hint.as_str(), Action::Open(path.clone()), false),
+            ("↑", "Push", "Push to the upstream branch", Action::Push(path.clone()), true),
+            ("↓", "Pull", "Pull from the upstream branch", Action::Pull(path.clone()), true),
+            ("↻", "Fetch", "Fetch all remotes", Action::Fetch(path), true),
         ];
+        let fill = toolbar_button_fill(p);
         let mut out = Vec::new();
-        for (label, hint, action, runs_git) in tools {
+        for (icon, name, hint, action, runs_git) in tools {
             let hint = if runs_git && blocked {
-                format!("{hint}: trust the repository first")
+                format!("{name}: trust the repository first")
             } else {
                 hint.to_string()
             };
-            let button = Button::new(RichText::new(label).size(13.0)).min_size(vec2(30.0, 22.0));
+            let label = button_label(icon, name, self.panes.toolbar_compact);
+            let button = Button::new(RichText::new(label).size(12.5).color(p.button_fg))
+                .fill(fill)
+                .stroke(Stroke::new(1.0, p.border))
+                .min_size(vec2(30.0, 22.0));
             let enabled = idle && !(runs_git && blocked);
             if ui
                 .add_enabled(enabled, button)
@@ -140,7 +152,12 @@ impl WorktreeBarApp {
     ) -> Option<Action> {
         let button = icon_button_at(ui, p, at, Icon::More, "Worktree");
         let blocked = wt.is_some_and(|(repo, _)| is_blocked(&self.config, repo));
-        let entries = worktree_entries(self.busy(), blocked, wt, self.editors.current.name());
+        let entries = worktree_entries(
+            self.busy(),
+            blocked,
+            wt.map(|(repo, wt)| (repo, wt)),
+            self.editors.current.name(),
+        );
         egui::Popup::menu(&button)
             .show(|ui| menu_entries(ui, entries))
             .and_then(|shown| shown.inner)
@@ -299,58 +316,75 @@ fn log_level_menu(ui: &mut Ui) -> Option<Action> {
 /// One menu entry: label, enabled, action; `None` draws a separator.
 type Entry = Option<(String, bool, Action)>;
 
-/// Copy path; Finder, the chosen editor, Terminal; Remove — greyed out without a worktree.
-fn worktree_entries(
+/// The ⋯ menu and the right click on a worktree in Locations: one list, so both name the same
+/// command the same way.
+pub(super) fn worktree_entries(
     busy: bool,
     blocked: bool,
-    wt: Option<&(Repo, Worktree)>,
+    wt: Option<(&Repo, &Worktree)>,
     editor: &str,
 ) -> Vec<Entry> {
-    let open_in = format!("Open Worktree in {editor}");
+    let open_in = format!("Open in {editor}");
     let Some((repo, wt)) = wt else {
         let off = |label: &str| Some((label.to_string(), false, Action::DismissLink));
         return vec![
-            off("Copy Worktree Path"),
-            None,
-            off(crate::os::reveal_in_file_manager()),
             off(&open_in),
-            off("Open Worktree in Terminal"),
+            off("Open in Terminal"),
+            off(crate::os::reveal_in_file_manager()),
+            None,
+            off("Copy Path"),
         ];
     };
-    // Removing reads the worktree's status: not before the repository is trusted.
-    let can_remove = !busy
-        && !blocked
-        && openable(wt)
-        && repo.layout == Layout::Bare
-        && wt.dirty == Some(false)
-        && !wt.locked;
     let path = wt.path.clone();
     let entry =
         |label: &str, enabled: bool, action: Action| Some((label.to_string(), enabled, action));
+    let remove = match remove_blocker(busy, blocked, repo, wt) {
+        None => entry("Remove Worktree…", true, remove_confirm(wt)),
+        Some(why) => entry(&format!("Remove Worktree… ({why})"), false, Action::DismissLink),
+    };
     vec![
-        entry(
-            "Copy Worktree Path",
-            true,
-            Action::Copy(path.display().to_string()),
-        ),
-        None,
+        entry(&open_in, !busy, Action::Open(path.clone())),
+        entry("Open in Terminal", !busy, Action::OpenTerminal(path.clone())),
         entry(
             crate::os::reveal_in_file_manager(),
             !busy,
             Action::RevealInFinder(path.clone()),
         ),
-        entry(&open_in, !busy, Action::Open(path.clone())),
-        entry(
-            "Open Worktree in Terminal",
-            !busy,
-            Action::OpenTerminal(path),
-        ),
         None,
-        entry("Remove Worktree…", can_remove, remove_confirm(wt)),
+        entry("Copy Path", true, Action::Copy(path.display().to_string())),
+        None,
+        remove,
     ]
 }
 
-fn menu_entries(ui: &mut Ui, entries: Vec<Entry>) -> Option<Action> {
+/// Why Remove is off, in a few words for the menu; `None` when it can run. Removing reads the
+/// worktree's status, so it also waits for trust.
+pub(super) fn remove_blocker(
+    busy: bool,
+    blocked: bool,
+    repo: &Repo,
+    wt: &Worktree,
+) -> Option<&'static str> {
+    if repo.layout != Layout::Bare {
+        Some("plain clone")
+    } else if !openable(wt) {
+        Some("not a worktree")
+    } else if blocked {
+        Some("not trusted")
+    } else if wt.locked {
+        Some("locked")
+    } else if wt.dirty == Some(true) {
+        Some("has changes")
+    } else if wt.dirty.is_none() {
+        Some("reading status")
+    } else if busy {
+        Some("busy")
+    } else {
+        None
+    }
+}
+
+pub(super) fn menu_entries(ui: &mut Ui, entries: Vec<Entry>) -> Option<Action> {
     let mut picked = None;
     for entry in entries {
         let Some((label, enabled, action)) = entry else {
@@ -420,4 +454,47 @@ fn branch_field(ui: &mut Ui, p: &Palette, rect: Rect, wt: Option<&Worktree>) -> 
         crate::os::shortcut_palette()
     );
     response.on_hover_text(hint)
+}
+
+/// `↻ Fetch`, or only `↻` in a narrow window; a button without an icon keeps its name.
+fn button_label(icon: &str, name: &str, compact: bool) -> String {
+    match (icon.is_empty(), compact) {
+        (true, _) => name.to_string(),
+        (false, true) => icon.to_string(),
+        (false, false) => format!("{icon} {name}"),
+    }
+}
+
+/// `button_bg`, or `input_bg` when `button_bg` nearly matches the toolbar it sits on.
+fn toolbar_button_fill(p: &Palette) -> Color32 {
+    let step = |a: Color32, b: Color32| (0..3).map(|i| (a[i] as i32 - b[i] as i32).abs()).sum::<i32>();
+    if step(p.button_bg, p.toolbar_bg) >= MIN_BUTTON_STEP {
+        p.button_bg
+    } else {
+        p.input_bg
+    }
+}
+
+#[cfg(test)]
+mod button_tests {
+    use super::*;
+
+    #[test]
+    fn labels_shrink_to_icons_in_a_narrow_window() {
+        assert_eq!(button_label("↻", "Fetch", false), "↻ Fetch");
+        assert_eq!(button_label("↻", "Fetch", true), "↻");
+        assert_eq!(button_label("", "Open", true), "Open");
+    }
+
+    /// The toolbar buttons of every built-in skin stand out from the toolbar.
+    #[test]
+    fn toolbar_buttons_are_visible_on_every_skin() {
+        let step = |a: Color32, b: Color32| (0..3).map(|i| (a[i] as i32 - b[i] as i32).abs()).sum::<i32>();
+        for (name, _, palette) in crate::skin::seeds::builtin() {
+            let fill = toolbar_button_fill(&palette);
+            assert!(step(fill, palette.toolbar_bg) >= 20, "{name}: fill too close to the toolbar");
+        }
+        assert_eq!(toolbar_button_fill(&crate::theme::LIGHT), crate::theme::LIGHT.input_bg);
+        assert_eq!(toolbar_button_fill(&crate::theme::DARK), crate::theme::DARK.button_bg);
+    }
 }

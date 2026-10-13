@@ -59,6 +59,7 @@ impl WorktreeBarApp {
             | Action::NavForward
             | Action::OpenPalette
             | Action::FindInHistory
+            | Action::FindRepository
             | Action::OpenRepoDialog
             | Action::CloseRepoDialog => self.window_action(action),
             Action::Activate(root) => self.activate(root),
@@ -191,6 +192,10 @@ impl WorktreeBarApp {
             }
             Action::OpenPalette => self.palette = Some(palette::PaletteState::default()),
             Action::FindInHistory => self.open_history_filter(),
+            Action::FindRepository => {
+                self.panes.repo_search_open = true;
+                self.panes.repo_focus = true;
+            }
             Action::NavBack => {
                 if let Some(place) = self.nav.back(self.place()) {
                     self.go_to(place);
@@ -559,6 +564,9 @@ fn global_keys(ctx: &Context) -> Option<Action> {
     if ctx.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::F)) {
         return Some(Action::FindInHistory);
     }
+    if ctx.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::L)) {
+        return Some(Action::FindRepository);
+    }
     let (palette, back, forward, log_path) = ctx.input_mut(|i| {
         (
             i.consume_key(shift_command, Key::P),
@@ -619,6 +627,7 @@ fn needs_job(action: &Action) -> bool {
             | Action::NavForward
             | Action::OpenPalette
             | Action::FindInHistory
+            | Action::FindRepository
             | Action::OpenRepoDialog
             | Action::CloseRepoDialog
             | Action::PickRemote { .. }

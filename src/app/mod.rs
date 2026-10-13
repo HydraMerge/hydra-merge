@@ -3,9 +3,11 @@
 mod actions;
 mod background;
 mod central;
+mod clean_card;
 mod commits;
 mod compare;
 mod dialogs;
+mod elide;
 mod history;
 mod history_filter;
 mod jobs;
@@ -14,12 +16,14 @@ mod layout;
 mod locations;
 mod nav;
 mod palette;
+mod repo_column;
 mod skins;
 mod summary;
 mod toolbar;
 mod top;
 mod tree;
 mod updates;
+mod wt_status;
 
 use locations::*;
 
@@ -109,6 +113,13 @@ struct PaneState {
     palette_recent: Vec<String>,
     /// The toolbar field the palette opens under (last frame's position).
     palette_anchor: Option<Rect>,
+    /// The window is too narrow for Fetch / Pull / Push labels: icons only.
+    toolbar_compact: bool,
+    /// Filter of the Repositories column.
+    repo_query: String,
+    repo_search_open: bool,
+    /// Focus the Repositories filter on the next frame (⌘L or the magnifier).
+    repo_focus: bool,
 }
 
 /// The "Open Repository" window: a path typed or picked in the folder picker.
@@ -164,6 +175,8 @@ enum Action {
     OpenPalette,
     /// ⌘F: open the commit list filter.
     FindInHistory,
+    /// ⌘L: open the Repositories filter.
+    FindRepository,
     /// The "Open Repository" window.
     OpenRepoDialog,
     /// The macOS folder picker for that window.

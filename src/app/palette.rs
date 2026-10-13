@@ -132,7 +132,7 @@ impl WorktreeBarApp {
             ),
             command("Open in Terminal", idle, Action::OpenTerminal(path.clone())),
             command(
-                crate::os::show_in_file_manager(),
+                crate::os::reveal_in_file_manager(),
                 idle,
                 Action::RevealInFinder(path.clone()),
             ),

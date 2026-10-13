@@ -216,6 +216,8 @@ fn window_screenshots() {
             .wgpu()
             .build_eframe(move |cc| WorktreeBarApp::with_settings_dir(cc, cfg, Some(dir)));
         settle(&mut harness);
+        shot(&mut harness, &format!("start-{theme}"));
+        click(&mut harness, egui::pos2(40.0, 108.0));
         shot(&mut harness, &format!("summary-{theme}"));
         click(&mut harness, egui::pos2(1385.0, 18.0));
         type_text(&mut harness, "/etc");
@@ -230,7 +232,7 @@ fn window_screenshots() {
         key(&mut harness, egui::Key::Escape, egui::Modifiers::NONE);
         wheel(&mut harness, egui::pos2(600.0, 15.0), egui::vec2(0.0, -6.0));
         shot(&mut harness, &format!("tabs-wheel-{theme}"));
-        click(&mut harness, egui::pos2(400.0, 155.0));
+        click(&mut harness, egui::pos2(592.0, 155.0));
         shot(&mut harness, &format!("commit-{theme}"));
         key(
             &mut harness,
@@ -251,13 +253,13 @@ fn window_screenshots() {
         type_text(&mut harness, "compare with: test");
         key(&mut harness, egui::Key::Enter, egui::Modifiers::NONE);
         shot(&mut harness, &format!("compare-{theme}"));
-        click(&mut harness, egui::pos2(400.0, 118.0));
+        click(&mut harness, egui::pos2(592.0, 118.0));
         key(&mut harness, egui::Key::F, egui::Modifiers::COMMAND);
         type_text(&mut harness, "chore");
         shot(&mut harness, &format!("filter-{theme}"));
         key(&mut harness, egui::Key::Escape, egui::Modifiers::NONE);
-        click(&mut harness, egui::pos2(400.0, 118.0));
-        click(&mut harness, egui::pos2(685.0, 392.0));
+        click(&mut harness, egui::pos2(592.0, 118.0));
+        click(&mut harness, egui::pos2(877.0, 394.0));
         shot(&mut harness, &format!("selected-{theme}"));
         for skin in ["Monokai", "Ocean", "Solarized Light"] {
             run_palette(&mut harness, &format!("skin: {}", skin.to_lowercase()));
@@ -282,6 +284,13 @@ fn window_screenshots() {
             .push(egui::Event::PointerMoved(egui::pos2(1300.0, 211.0)));
         settle(&mut harness);
         shot(&mut harness, &format!("open-with-{theme}"));
+        key(&mut harness, egui::Key::Escape, egui::Modifiers::NONE);
+        // The clean worktree `test`: the Summary shows its card instead of a commit form.
+        click(&mut harness, egui::pos2(262.0, 177.0));
+        shot(&mut harness, &format!("clean-{theme}"));
+        key(&mut harness, egui::Key::L, egui::Modifiers::COMMAND);
+        type_text(&mut harness, "service-1");
+        shot(&mut harness, &format!("repo-filter-{theme}"));
         key(&mut harness, egui::Key::Escape, egui::Modifiers::NONE);
     }
 }
