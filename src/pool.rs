@@ -60,19 +60,28 @@ mod tests {
         assert!(parallel_map(&Vec::<u32>::new(), |n| *n).is_empty());
     }
 
+    /// Counts how many items run at once instead of timing them: a wall-clock bound failed on
+    /// loaded CI runners (x86_64 macOS) although the items did overlap.
     #[test]
     fn runs_items_at_the_same_time() {
-        if threads_for(8) < 4 {
-            return; // A single-core machine cannot show the speed-up.
+        if threads_for(8) < 2 {
+            return; // One core runs the items one after another by design.
         }
+        let active = AtomicUsize::new(0);
+        let peak = AtomicUsize::new(0);
         let items = [0u8; 8];
-        let started = Instant::now();
-        parallel_map(&items, |_| thread::sleep(Duration::from_millis(100)));
-        assert!(
-            started.elapsed() < Duration::from_millis(500),
-            "{:?}",
-            started.elapsed()
-        );
+        parallel_map(&items, |_| {
+            let now = active.fetch_add(1, Ordering::SeqCst) + 1;
+            peak.fetch_max(now, Ordering::SeqCst);
+            // Wait for a second item to start; the deadline only keeps a broken pool from
+            // hanging the test, it is not what the assertion measures.
+            let deadline = Instant::now() + Duration::from_secs(10);
+            while peak.load(Ordering::SeqCst) < 2 && Instant::now() < deadline {
+                thread::sleep(Duration::from_millis(1));
+            }
+            active.fetch_sub(1, Ordering::SeqCst);
+        });
+        assert!(peak.load(Ordering::SeqCst) >= 2, "items never overlapped");
     }
 
     #[test]

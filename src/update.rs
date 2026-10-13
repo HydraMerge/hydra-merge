@@ -157,12 +157,35 @@ pub fn download(offer: &Offer) -> Result<PathBuf, String> {
     if !sums_match(&sums, &offer.asset_name, &bytes) {
         return Err("the download does not match SHA256SUMS".to_string());
     }
-    let dir = std::env::temp_dir().join(format!("hydra-merge-update-{}", offer.version));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).map_err(|e| format!("cannot prepare the update: {e}"))?;
+    let dir = fresh_dir(&std::env::temp_dir(), &offer.version)
+        .map_err(|e| format!("cannot prepare the update: {e}"))?;
     let archive = dir.join(&offer.asset_name);
     fs::write(&archive, &bytes).map_err(|e| format!("cannot store the download: {e}"))?;
     unpack(&archive, &dir)
+}
+
+/// A new, empty folder under `base` for one download. Unpacking into a folder left by an
+/// earlier attempt could pick up its old `HydraMerge.app`, and clearing that folder would need
+/// a recursive delete, which nothing in `src/` may do (`source_has_no_forbidden_git`). So every
+/// attempt takes a name nobody has used: `create_dir`, unlike `create_dir_all`, fails on an
+/// existing folder, and the next suffix is tried. The system cleans its temporary folder.
+fn fresh_dir(base: &Path, version: &str) -> std::io::Result<PathBuf> {
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos());
+    let pid = std::process::id();
+    for attempt in 0..100u32 {
+        let dir = base.join(format!("hydra-merge-update-{version}-{pid}-{stamp}-{attempt}"));
+        match fs::create_dir(&dir) {
+            Ok(()) => return Ok(dir),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(e),
+        }
+    }
+    Err(std::io::Error::new(
+        std::io::ErrorKind::AlreadyExists,
+        "no free folder name for the update",
+    ))
 }
 
 fn unpack(archive: &Path, dir: &Path) -> Result<PathBuf, String> {
@@ -344,6 +367,19 @@ fn unix_now() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Two downloads never share a folder, and the folder starts empty: nothing old to unpack
+    /// over, so nothing has to be deleted first.
+    #[test]
+    fn every_download_gets_a_new_empty_folder() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let a = fresh_dir(tmp.path(), "0.1.11").expect("first");
+        fs::write(a.join("HydraMerge.app"), "old").expect("write");
+        let b = fresh_dir(tmp.path(), "0.1.11").expect("second");
+        assert_ne!(a, b);
+        assert!(b.starts_with(tmp.path()));
+        assert_eq!(fs::read_dir(&b).expect("read").count(), 0);
+    }
 
     fn release_json(tag: &str, names: &[&str]) -> String {
         let assets: Vec<String> = names
