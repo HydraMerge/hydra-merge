@@ -42,6 +42,27 @@ A branch checked out later is added as `~/repos/group/project/<branch>`. An exis
 
 **An existing clone you do not want to move.** Choose its parent as the scan folder, or use **Open Repository by Path…** and pick the clone itself. The clone must sit inside the scan folder.
 
+## Install
+
+Download the archive for your system from the [latest release](https://github.com/HydraMerge/hydra-merge/releases/latest)
+(currently `v0.1.12`). Archives are named `hydra-merge-<tag>-<target>`, with the targets from the table under
+[Build and run](#build-and-run), and `SHA256SUMS` lists their checksums:
+
+```
+shasum -a 256 -c SHA256SUMS --ignore-missing
+```
+
+**macOS**: unzip `hydra-merge-v0.1.12-aarch64-apple-darwin.zip` (Apple silicon) or `-x86_64-apple-darwin.zip` (Intel)
+and move `HydraMerge.app` to `/Applications`. The build is not notarized, so clear the quarantine flag once:
+
+```
+xattr -dr com.apple.quarantine /Applications/HydraMerge.app
+```
+
+**Linux and Windows**: unpack the `.tar.gz` and run `hydra-merge` (`hydra-merge.exe` on Windows).
+
+Later versions arrive through [Updates](#updates).
+
 ## Build and run
 
 ```
@@ -222,7 +243,7 @@ and push time out after 120 s.
 
 ## Updates
 
-Once a day, and from Settings → Check for Updates, HydraMerge asks GitHub for a newer `v*` release. A newer build is shown in the status line with Install and Later. Install downloads the archive for this system, checks it against `SHA256SUMS` from the release, then replaces the running copy and starts it again. On macOS the quarantine flag is cleared on the new app, the same local step a downloaded build needs without notarization.
+Once a day, and from Settings → Check for Updates, HydraMerge asks GitHub for a newer `v*` release. A newer build is shown in the status line with Install and Later. Install downloads the archive for this system, checks it against `SHA256SUMS` from the release, then replaces the running copy and starts it again. Every attempt unpacks into a new empty folder under the system temporary directory, so a download left by an earlier attempt is never mixed into the new one, and HydraMerge deletes nothing itself; the system clears that directory. On macOS the quarantine flag is cleared on the new app, the same local step a downloaded build needs without notarization.
 
 ## Keyboard
 
@@ -231,12 +252,13 @@ Once a day, and from Settings → Check for Updates, HydraMerge asks GitHub for 
 | `⌘⇧P` / `Ctrl+Shift+P` | command palette |
 | `⌘[` / `⌘]` or `Ctrl+[` / `Ctrl+]` | back / forward |
 | `⌘F` / `Ctrl+F` | filter commits |
+| `⌘L` / `Ctrl+L` | filter repositories (`Esc` in the field clears it) |
 | `⌘⇧L` / `Ctrl+Shift+L` | show the log file path |
 | `⌘R` / `Ctrl+R` | rescan |
 | `↑` / `↓`, `Enter` | move through the worktrees in Locations, open the selected one |
 | `↑` / `↓`, `Enter`, `Esc` | in the palette: choose, run, close |
 
-While a text field has focus only the palette, back / forward, find and log-path shortcuts work; the other keys go to the field. On Windows and Linux those shortcuts use Ctrl instead of ⌘.
+While a text field has focus only the palette, back / forward, find, repository filter and log-path shortcuts work; the other keys go to the field. On Windows and Linux those shortcuts use Ctrl instead of ⌘.
 
 Settings → Log Level chooses error, warn, info or debug. A level also writes the more serious lines. The choice is kept in `session.txt`. The default is info.
 
