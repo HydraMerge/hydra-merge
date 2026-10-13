@@ -18,10 +18,17 @@ impl WorktreeBarApp {
                 let full = ui.available_rect_before_wrap();
                 ui.allocate_rect(full, Sense::hover());
                 let Some(repo) = self.active_repo(repos).cloned() else {
+                    let roots = self
+                        .config
+                        .roots
+                        .iter()
+                        .map(|path| tilde_path(path))
+                        .collect::<Vec<_>>()
+                        .join(", ");
                     let hint = if self.autoscan {
-                        "Repositories from ~/repos appear as tabs."
+                        format!("Repositories under {roots} appear as tabs.")
                     } else {
-                        "Auto-scan is off. Use Rescan or Open path… in the ⋯ menu, or turn Auto on."
+                        "Auto-scan is off. Use Rescan or Scan Folder… in Settings, or turn Scan at Startup on.".to_string()
                     };
                     in_column(ui, full, "empty", PANE_MARGIN, |ui| {
                         ui.label(RichText::new(hint).color(p.text_muted))

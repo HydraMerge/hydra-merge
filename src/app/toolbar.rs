@@ -188,8 +188,29 @@ impl WorktreeBarApp {
             ThemeChoice::Dark => "Switch to Light Theme",
             ThemeChoice::Light => "Switch to Dark Theme",
         };
-        let entries = vec![
+        let scan = self
+            .config
+            .roots
+            .iter()
+            .map(|path| tilde_path(path))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let mut entries = vec![
             Some(("Rescan Repositories".to_string(), !busy, Action::Rescan)),
+            Some((
+                format!("Scan Folder… ({scan})"),
+                !busy,
+                Action::ChooseScanFolder,
+            )),
+        ];
+        if !self.scan_roots.is_empty() {
+            entries.push(Some((
+                "Use Default Scan Folder".to_string(),
+                !busy,
+                Action::ResetScanFolder,
+            )));
+        }
+        entries.extend([
             Some((
                 "Open Repository by Path…".to_string(),
                 true,
@@ -208,7 +229,7 @@ impl WorktreeBarApp {
             )),
             None,
             Some((theme.to_string(), true, Action::ToggleTheme)),
-        ];
+        ]);
         let button = icon_button(ui, p, Icon::Gear, "Settings");
         egui::Popup::menu(&button)
             .show(|ui| {

@@ -19,6 +19,8 @@ pub struct Session {
     pub closed_tabs: Vec<PathBuf>,
     /// Plain clones added with "Open path…".
     pub extra_roots: Vec<PathBuf>,
+    /// Folders the user chose to scan. Empty means the default discovery roots.
+    pub scan_roots: Vec<PathBuf>,
     pub history_width: Option<f32>,
     pub locations_open: bool,
     pub auto_fetch: bool,
@@ -38,6 +40,7 @@ impl Default for Session {
             selected: None,
             closed_tabs: Vec::new(),
             extra_roots: Vec::new(),
+            scan_roots: Vec::new(),
             history_width: None,
             locations_open: true,
             auto_fetch: false,
@@ -73,6 +76,7 @@ impl Session {
         self.selected.iter().for_each(|p| put("selected", path(p)));
         self.closed_tabs.iter().for_each(|p| put("closed", path(p)));
         self.extra_roots.iter().for_each(|p| put("extra", path(p)));
+        self.scan_roots.iter().for_each(|p| put("scan", path(p)));
         self.history_width
             .iter()
             .for_each(|w| put("history_width", w.to_string()));
@@ -113,6 +117,7 @@ impl Session {
             "selected" => self.selected = Some(path()),
             "closed" => self.closed_tabs.push(path()),
             "extra" => self.extra_roots.push(path()),
+            "scan" => self.scan_roots.push(path()),
             "history_width" => {
                 self.history_width = value
                     .parse()
@@ -178,6 +183,7 @@ mod tests {
             selected: Some(PathBuf::from("/r/group/repo/feature")),
             closed_tabs: vec![PathBuf::from("/r/a"), PathBuf::from("/r/b")],
             extra_roots: vec![PathBuf::from("/r/plain")],
+            scan_roots: vec![PathBuf::from("/r/scan")],
             history_width: Some(420.5),
             locations_open: false,
             auto_fetch: true,

@@ -74,6 +74,8 @@ impl WorktreeBarApp {
                 branch,
             } => self.start_create_remote(ctx, root, remote, branch),
             Action::Rescan => self.start_scan(ctx),
+            Action::ChooseScanFolder => self.start_choose_scan_folder(ctx),
+            Action::ResetScanFolder => self.reset_scan_folder(ctx),
             Action::ToggleAutoscan => self.toggle_autoscan(ctx),
             Action::ToggleTheme => self.toggle_theme(ctx),
             Action::DismissError => self.error = None,

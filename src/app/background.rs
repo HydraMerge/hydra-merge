@@ -218,6 +218,7 @@ impl WorktreeBarApp {
             selected,
             closed_tabs: self.closed_tabs.clone(),
             extra_roots: self.extra_roots.clone(),
+            scan_roots: self.scan_roots.clone(),
             history_width: self.history_width,
             locations_open: self.locations_open,
             auto_fetch: self.auto_fetch,
@@ -264,6 +265,7 @@ impl WorktreeBarApp {
     /// Restores what the last session kept; the open tab and worktree wait for the first scan.
     pub(super) fn restore(&mut self, session: Session) {
         self.extra_roots = session.extra_roots;
+        self.apply_scan_roots(&session.scan_roots);
         self.closed_tabs = session.closed_tabs;
         self.history_width = session.history_width;
         self.locations_open = session.locations_open;
@@ -276,6 +278,20 @@ impl WorktreeBarApp {
         if let Some(editor) = session.editor_app.as_deref().and_then(Editor::app) {
             self.editors.choose(editor);
         }
+    }
+
+    /// A saved scan folder replaces the default roots when it still exists.
+    fn apply_scan_roots(&mut self, saved: &[PathBuf]) {
+        let roots: Vec<PathBuf> = saved
+            .iter()
+            .filter_map(|path| std::fs::canonicalize(path).ok())
+            .filter(|path| path.is_dir())
+            .collect();
+        if roots.is_empty() {
+            return;
+        }
+        self.scan_roots = roots.clone();
+        self.config.roots = roots;
     }
 
     /// After the first scan: reopen the tab and worktree of the last session when they exist.

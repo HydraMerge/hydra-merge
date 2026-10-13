@@ -137,6 +137,7 @@ impl WorktreeBarApp {
             JobResult::Pushed(r) => self.on_pushed(ctx, r),
             JobResult::Done(r) => self.on_done(r),
             JobResult::FolderChosen(r) => self.on_folder_chosen(r),
+            JobResult::ScanFolderChosen(r) => self.on_scan_folder_chosen(ctx, r),
             JobResult::EditorAppChosen(r) => self.on_editor_app_chosen(r),
             JobResult::Compared(key, r) => self.on_compared(key, r),
             JobResult::Searched(path, query, r) => self.on_searched(path, query, r),
@@ -275,6 +276,58 @@ impl WorktreeBarApp {
         self.spawn(ctx, move |_, _| {
             JobResult::FolderChosen(choose_folder(&start))
         });
+    }
+
+    /// The folder picker starts in the current scan folder.
+    pub(super) fn start_choose_scan_folder(&mut self, ctx: &Context) {
+        let start = self
+            .config
+            .roots
+            .first()
+            .cloned()
+            .unwrap_or_else(|| PathBuf::from("/"));
+        self.spawn(ctx, move |_, _| {
+            JobResult::ScanFolderChosen(choose_folder(&start))
+        });
+    }
+
+    pub(super) fn on_scan_folder_chosen(&mut self, ctx: &Context, result: AppResult<Option<PathBuf>>) {
+        let path = match result {
+            Ok(Some(path)) => path,
+            Ok(None) => return,
+            Err(error) => {
+                self.set_error(error);
+                return;
+            }
+        };
+        let canonical = match std::fs::canonicalize(&path) {
+            Ok(path) if path.is_dir() => path,
+            _ => {
+                self.set_error(crate::model::AppError::new(
+                    crate::model::ErrorCode::Io,
+                    format!("Not a folder: {}", path.display()),
+                ));
+                return;
+            }
+        };
+        self.scan_roots = vec![canonical.clone()];
+        self.config.roots = vec![canonical.clone()];
+        self.status = format!("Scanning {}", tilde_path(&canonical));
+        self.start_scan(ctx);
+    }
+
+    pub(super) fn reset_scan_folder(&mut self, ctx: &Context) {
+        self.scan_roots.clear();
+        self.config.roots = self.default_roots.clone();
+        let shown = self
+            .config
+            .roots
+            .iter()
+            .map(|path| tilde_path(path))
+            .collect::<Vec<_>>()
+            .join(", ");
+        self.status = format!("Scanning {shown}");
+        self.start_scan(ctx);
     }
 
     pub(super) fn on_folder_chosen(&mut self, result: AppResult<Option<PathBuf>>) {

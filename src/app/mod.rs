@@ -80,6 +80,7 @@ enum JobResult {
     /// A quick outside action (Terminal, Finder, a link): the text for the status line.
     Done(AppResult<String>),
     FolderChosen(AppResult<Option<PathBuf>>),
+    ScanFolderChosen(AppResult<Option<PathBuf>>),
     EditorAppChosen(AppResult<Option<PathBuf>>),
     Compared(CompareKey, AppResult<Arc<DiffView>>),
     Searched(PathBuf, String, AppResult<Vec<CommitLine>>),
@@ -164,6 +165,10 @@ enum Action {
     OpenRepoDialog,
     /// The macOS folder picker for that window.
     ChooseFolder,
+    /// Pick the folder whose repositories are scanned.
+    ChooseScanFolder,
+    /// Forget the chosen scan folder and use the default roots again.
+    ResetScanFolder,
     CloseRepoDialog,
     Open(PathBuf),
     /// Trust the repository at this root as it is now: its config may run programs.
@@ -415,6 +420,10 @@ pub struct WorktreeBarApp {
     hold_status: bool,
     /// Walk discovery roots when the window opens. Off unless `autoscan.txt` says `on`.
     autoscan: bool,
+    /// Scan folders chosen in Settings. Empty means `default_roots`.
+    scan_roots: Vec<PathBuf>,
+    /// Discovery roots from the environment, before a chosen scan folder replaces them.
+    default_roots: Vec<PathBuf>,
     theme_dir: Option<PathBuf>,
     theme_warned: bool,
 }
@@ -449,10 +458,13 @@ impl WorktreeBarApp {
 
     /// Empty window state: no repositories yet, nothing selected.
     fn blank(config: Config, theme_dir: Option<PathBuf>, autoscan: bool) -> WorktreeBarApp {
+        let default_roots = config.roots.clone();
         WorktreeBarApp {
             config,
             repos: Arc::from(Vec::new()),
             extra_roots: Vec::new(),
+            scan_roots: Vec::new(),
+            default_roots,
             active_root: None,
             selected: None,
             branches: None,
@@ -528,7 +540,7 @@ impl Editors {
 }
 
 /// `~/repos/x/master` for a path under the home directory.
-fn tilde_path(path: &Path) -> String {
+pub(super) fn tilde_path(path: &Path) -> String {
     let home = crate::os::home_dir();
     match home
         .as_deref()
