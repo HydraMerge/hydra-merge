@@ -184,10 +184,6 @@ impl WorktreeBarApp {
                 label.to_string()
             }
         };
-        let theme = match ThemeChoice::from_egui(ui.ctx().theme()) {
-            ThemeChoice::Dark => "Switch to Light Theme",
-            ThemeChoice::Light => "Switch to Dark Theme",
-        };
         let scan = self
             .config
             .roots
@@ -195,55 +191,91 @@ impl WorktreeBarApp {
             .map(|path| tilde_path(path))
             .collect::<Vec<_>>()
             .join(", ");
-        let mut entries = vec![
+        let entries = vec![
             Some(("Rescan Repositories".to_string(), !busy, Action::Rescan)),
             Some((
                 format!("Scan Folder… ({scan})"),
                 !busy,
                 Action::ChooseScanFolder,
             )),
-        ];
-        if !self.scan_roots.is_empty() {
-            entries.push(Some((
-                "Use Default Scan Folder".to_string(),
-                !busy,
-                Action::ResetScanFolder,
-            )));
-        }
-        entries.extend([
             Some((
                 "Open Repository by Path…".to_string(),
                 true,
                 Action::OpenRepoDialog,
             )),
-            Some(("Check for Updates".to_string(), true, Action::CheckUpdate)),
-            None,
-            Some((
-                check(self.autoscan, "Scan at Startup"),
-                !busy,
-                Action::ToggleAutoscan,
-            )),
-            Some((
-                check(self.auto_fetch, "Fetch Automatically (every 5 min)"),
-                true,
-                Action::ToggleAutoFetch,
-            )),
-            None,
-            Some((theme.to_string(), true, Action::ToggleTheme)),
-        ]);
+        ];
         let button = icon_button(ui, p, Icon::Gear, "Settings");
         egui::Popup::menu(&button)
             .show(|ui| {
-                let mut picked = menu_entries(ui, entries);
-                picked = picked.or(log_level_menu(ui));
-                let show_log = format!("Show Log Path ({})", crate::os::shortcut_log());
-                if ui.button(show_log).clicked() {
-                    picked = Some(Action::ShowLogPath);
-                    ui.close();
-                }
-                picked.or(self.editor_menu(ui)).or(self.skin_menu(ui))
+                let picked = menu_entries(ui, entries);
+                picked
+                    .or(self.preferences_menu(ui, check))
+                    .or(self.editor_menu(ui))
             })
             .and_then(|shown| shown.inner)
+    }
+
+    /// The less common gear commands: startup, fetch, updates, log, theme, skin.
+    fn preferences_menu(
+        &self,
+        ui: &mut Ui,
+        check: impl Fn(bool, &str) -> String,
+    ) -> Option<Action> {
+        let busy = self.busy();
+        let theme = match ThemeChoice::from_egui(ui.ctx().theme()) {
+            ThemeChoice::Dark => "Switch to Light Theme",
+            ThemeChoice::Light => "Switch to Dark Theme",
+        };
+        let mut picked = None;
+        ui.menu_button("Preferences", |ui| {
+            if !self.scan_roots.is_empty()
+                && ui
+                    .add_enabled(!busy, Button::new("Use Default Scan Folder"))
+                    .clicked()
+            {
+                picked = Some(Action::ResetScanFolder);
+                ui.close();
+            }
+            if ui
+                .add_enabled(!busy, Button::new(check(self.autoscan, "Scan at Startup")))
+                .clicked()
+            {
+                picked = Some(Action::ToggleAutoscan);
+                ui.close();
+            }
+            if ui
+                .button(check(
+                    self.auto_fetch,
+                    "Fetch Automatically (every 5 min)",
+                ))
+                .clicked()
+            {
+                picked = Some(Action::ToggleAutoFetch);
+                ui.close();
+            }
+            if ui.button("Check for Updates").clicked() {
+                picked = Some(Action::CheckUpdate);
+                ui.close();
+            }
+            ui.separator();
+            if picked.is_none() {
+                picked = log_level_menu(ui);
+            }
+            let show_log = format!("Show Log Path ({})", crate::os::shortcut_log());
+            if ui.button(show_log).clicked() {
+                picked = Some(Action::ShowLogPath);
+                ui.close();
+            }
+            ui.separator();
+            if ui.button(theme).clicked() {
+                picked = Some(Action::ToggleTheme);
+                ui.close();
+            }
+            if picked.is_none() {
+                picked = self.skin_menu(ui);
+            }
+        });
+        picked
     }
 }
 
