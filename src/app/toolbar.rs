@@ -216,6 +216,7 @@ impl WorktreeBarApp {
                 true,
                 Action::OpenRepoDialog,
             )),
+            Some(("Check for Updates".to_string(), true, Action::CheckUpdate)),
             None,
             Some((
                 check(self.autoscan, "Scan at Startup"),
@@ -229,30 +230,37 @@ impl WorktreeBarApp {
             )),
             None,
             Some((theme.to_string(), true, Action::ToggleTheme)),
-            None,
         ]);
-        let current = crate::log::level();
-        for level in crate::log::Level::ALL {
-            let mark = if level == current { "✓ " } else { "" };
-            entries.push(Some((
-                format!("{mark}Log Level: {}", level.as_str()),
-                true,
-                Action::SetLogLevel(level),
-            )));
-        }
-        entries.push(Some((
-            format!("Show Log Path ({})", crate::os::shortcut_log()),
-            true,
-            Action::ShowLogPath,
-        )));
         let button = icon_button(ui, p, Icon::Gear, "Settings");
         egui::Popup::menu(&button)
             .show(|ui| {
-                let picked = menu_entries(ui, entries);
+                let mut picked = menu_entries(ui, entries);
+                picked = picked.or(log_level_menu(ui));
+                let show_log = format!("Show Log Path ({})", crate::os::shortcut_log());
+                if ui.button(show_log).clicked() {
+                    picked = Some(Action::ShowLogPath);
+                    ui.close();
+                }
                 picked.or(self.editor_menu(ui)).or(self.skin_menu(ui))
             })
             .and_then(|shown| shown.inner)
     }
+}
+
+/// ⚙ → Log Level: error, warn, info, debug. A mark sits on the active one.
+fn log_level_menu(ui: &mut Ui) -> Option<Action> {
+    let current = crate::log::level();
+    let mut picked = None;
+    ui.menu_button("Log Level", |ui| {
+        for level in crate::log::Level::ALL {
+            let mark = if level == current { "✓ " } else { "" };
+            if ui.button(format!("{mark}{}", level.as_str())).clicked() {
+                picked = Some(Action::SetLogLevel(level));
+                ui.close();
+            }
+        }
+    });
+    picked
 }
 
 /// The ⋯ menu entries of the shown worktree: Terminal, Finder, Remove.

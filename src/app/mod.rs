@@ -19,6 +19,7 @@ mod summary;
 mod toolbar;
 mod top;
 mod tree;
+mod updates;
 
 use locations::*;
 
@@ -175,6 +176,12 @@ enum Action {
     SetLogLevel(crate::log::Level),
     /// Puts the log file path on the status line. Bound to ⌘⇧L / Ctrl+Shift+L.
     ShowLogPath,
+    /// Asks GitHub for a newer release now.
+    CheckUpdate,
+    /// Downloads the offered release and replaces this copy.
+    InstallUpdate,
+    /// Hides the offered release until a newer one exists.
+    DismissUpdate,
     CloseRepoDialog,
     Open(PathBuf),
     /// Trust the repository at this root as it is now: its config may run programs.
@@ -432,14 +439,14 @@ pub struct WorktreeBarApp {
     default_roots: Vec<PathBuf>,
     theme_dir: Option<PathBuf>,
     theme_warned: bool,
+    /// A newer release the user has not dismissed.
+    update_offer: Option<crate::update::Offer>,
+    update_busy: bool,
+    update_rx: Receiver<updates::UpdateMsg>,
+    update_tx: std::sync::mpsc::Sender<updates::UpdateMsg>,
 }
 
 impl WorktreeBarApp {
-    pub fn new(cc: &eframe::CreationContext<'_>, config: Config) -> WorktreeBarApp {
-        let theme_dir = crate::os::home_dir().map(|h| theme::config_dir(&h));
-        WorktreeBarApp::with_settings_dir(cc, config, theme_dir)
-    }
-
     /// `settings_dir` holds `theme.txt` and `autoscan.txt`; `None` keeps nothing on disk.
     /// Tests pass a temporary directory instead of reading `$HOME`.
     pub fn with_settings_dir(
@@ -466,9 +473,21 @@ impl WorktreeBarApp {
         app
     }
 
+    /// The real window: also looks for a newer release once a day.
+    pub fn new(cc: &eframe::CreationContext<'_>, config: Config) -> WorktreeBarApp {
+        let mut app = WorktreeBarApp::with_settings_dir(
+            cc,
+            config,
+            crate::os::home_dir().map(|home| theme::config_dir(&home)),
+        );
+        app.schedule_update_check(&cc.egui_ctx, false);
+        app
+    }
+
     /// Empty window state: no repositories yet, nothing selected.
     fn blank(config: Config, theme_dir: Option<PathBuf>, autoscan: bool) -> WorktreeBarApp {
         let default_roots = config.roots.clone();
+        let (update_tx, update_rx) = channel();
         WorktreeBarApp {
             config,
             repos: Arc::from(Vec::new()),
@@ -518,6 +537,10 @@ impl WorktreeBarApp {
             autoscan,
             theme_dir,
             theme_warned: false,
+            update_offer: None,
+            update_busy: false,
+            update_rx,
+            update_tx,
         }
     }
 
@@ -643,6 +666,7 @@ impl eframe::App for WorktreeBarApp {
     fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
         self.poll(&ctx);
+        self.poll_update(&ctx);
         self.poll_loader(&ctx);
         self.poll_status_lane();
         self.background_tick(&ctx);

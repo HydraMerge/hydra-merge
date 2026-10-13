@@ -13,4 +13,5 @@ pub mod session;
 pub mod skin;
 pub mod theme;
 pub mod trust;
+pub mod update;
 pub mod watch;

@@ -75,6 +75,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          (cd dist && sha256sum -- * > SHA256SUMS)
           gh release create "${GITHUB_REF_NAME}" dist/* \
             --repo "${GITHUB_REPOSITORY}" \
             --title "${GITHUB_REF_NAME}" \

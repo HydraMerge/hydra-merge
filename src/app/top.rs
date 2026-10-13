@@ -111,6 +111,14 @@ impl WorktreeBarApp {
                             ui.add(Spinner::new());
                         }
                         ui.label(RichText::new(&self.status).color(p.text_muted));
+                        if self.update_offer.is_some() {
+                            if ui.button("Install").clicked() {
+                                return Some(Action::InstallUpdate);
+                            }
+                            if ui.button("Later").clicked() {
+                                return Some(Action::DismissUpdate);
+                            }
+                        }
                         self.link_button(ui, p)
                     })
                     .inner

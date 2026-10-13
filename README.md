@@ -211,6 +211,10 @@ All in the settings folder (`~/Library/Application Support/hydra-merge/` on macO
 Git is started only with `std::process::Command` and an argv. Local git calls time out after 15 s. Fetch, pull,
 and push time out after 120 s.
 
+## Updates
+
+Once a day, and from Settings → Check for Updates, HydraMerge asks GitHub for a newer `v*` release. A newer build is shown in the status line with Install and Later. Install downloads the archive for this system, checks it against `SHA256SUMS` from the release, then replaces the running copy and starts it again. On macOS the quarantine flag is cleared on the new app, the same local step a downloaded build needs without notarization.
+
 ## Keyboard
 
 | Keys | Action |
