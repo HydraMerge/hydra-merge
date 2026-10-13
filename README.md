@@ -1,6 +1,8 @@
 # HydraMerge
 
-![HydraMerge](assets/logo.png)
+<p align="center">
+  <img src="assets/macos/AppIcon-1024.png" alt="HydraMerge" width="160">
+</p>
 
 Desktop app (Rust, `eframe`/`egui`) for repositories laid out as "bare + one folder per branch",
 on the current macOS, Windows and Linux, each as x86_64 and arm64.
