@@ -501,7 +501,7 @@ impl WorktreeBarApp {
     }
 
     pub(super) fn set_error(&mut self, error: AppError) {
-        eprintln!("error: {:?}: {}", error.code, error.message);
+        crate::log_error!("{:?}: {}", error.code, error.message);
         self.error = Some(error);
     }
 

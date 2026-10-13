@@ -76,6 +76,8 @@ impl WorktreeBarApp {
             Action::Rescan => self.start_scan(ctx),
             Action::ChooseScanFolder => self.start_choose_scan_folder(ctx),
             Action::ResetScanFolder => self.reset_scan_folder(ctx),
+            Action::SetLogLevel(level) => self.set_log_level(level),
+            Action::ShowLogPath => self.show_log_path(),
             Action::ToggleAutoscan => self.toggle_autoscan(ctx),
             Action::ToggleTheme => self.toggle_theme(ctx),
             Action::DismissError => self.error = None,
@@ -103,6 +105,21 @@ impl WorktreeBarApp {
         }
         self.hold_status = true;
         self.apply(ctx, Action::Rescan);
+    }
+
+    fn set_log_level(&mut self, level: crate::log::Level) {
+        crate::log::set_level(level);
+        crate::log_info!("log level {}", level.as_str());
+        self.status = format!("Log level: {}", level.as_str());
+        self.hold_status = true;
+    }
+
+    fn show_log_path(&mut self) {
+        self.status = match crate::log::path() {
+            Some(path) => format!("Log: {}", tilde_path(&path)),
+            None => "Log file is not open".to_string(),
+        };
+        self.hold_status = true;
     }
 
     /// One job runs at a time: an action that needs one waits while another runs, instead of
@@ -533,21 +550,24 @@ fn repo_job(action: Action) -> Option<(String, WriteWork)> {
     Some(job)
 }
 
-/// ⌘⇧P opens the palette and ⌘[ / ⌘] move back and forward, even while typing.
+/// Palette, back / forward, find, and the log path, even while typing.
 fn global_keys(ctx: &Context) -> Option<Action> {
     let shift_command = Modifiers::COMMAND | Modifiers::SHIFT;
     if ctx.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::F)) {
         return Some(Action::FindInHistory);
     }
-    let (palette, back, forward) = ctx.input_mut(|i| {
+    let (palette, back, forward, log_path) = ctx.input_mut(|i| {
         (
             i.consume_key(shift_command, Key::P),
             i.consume_key(Modifiers::COMMAND, Key::OpenBracket),
             i.consume_key(Modifiers::COMMAND, Key::CloseBracket),
+            i.consume_key(shift_command, Key::L),
         )
     });
     if palette {
         Some(Action::OpenPalette)
+    } else if log_path {
+        Some(Action::ShowLogPath)
     } else if back {
         Some(Action::NavBack)
     } else {

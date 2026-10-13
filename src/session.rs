@@ -21,6 +21,8 @@ pub struct Session {
     pub extra_roots: Vec<PathBuf>,
     /// Folders the user chose to scan. Empty means the default discovery roots.
     pub scan_roots: Vec<PathBuf>,
+    /// Log detail kept between launches. `None` means the default, info.
+    pub log_level: Option<crate::log::Level>,
     pub history_width: Option<f32>,
     pub locations_open: bool,
     pub auto_fetch: bool,
@@ -41,6 +43,7 @@ impl Default for Session {
             closed_tabs: Vec::new(),
             extra_roots: Vec::new(),
             scan_roots: Vec::new(),
+            log_level: None,
             history_width: None,
             locations_open: true,
             auto_fetch: false,
@@ -77,6 +80,9 @@ impl Session {
         self.closed_tabs.iter().for_each(|p| put("closed", path(p)));
         self.extra_roots.iter().for_each(|p| put("extra", path(p)));
         self.scan_roots.iter().for_each(|p| put("scan", path(p)));
+        if let Some(level) = self.log_level {
+            put("log_level", level.as_str().to_string());
+        }
         self.history_width
             .iter()
             .for_each(|w| put("history_width", w.to_string()));
@@ -118,6 +124,7 @@ impl Session {
             "closed" => self.closed_tabs.push(path()),
             "extra" => self.extra_roots.push(path()),
             "scan" => self.scan_roots.push(path()),
+            "log_level" => self.log_level = crate::log::Level::parse(value),
             "history_width" => {
                 self.history_width = value
                     .parse()
@@ -184,6 +191,7 @@ mod tests {
             closed_tabs: vec![PathBuf::from("/r/a"), PathBuf::from("/r/b")],
             extra_roots: vec![PathBuf::from("/r/plain")],
             scan_roots: vec![PathBuf::from("/r/scan")],
+            log_level: Some(crate::log::Level::Debug),
             history_width: Some(420.5),
             locations_open: false,
             auto_fetch: true,

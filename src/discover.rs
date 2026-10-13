@@ -32,19 +32,32 @@ pub fn reload_repo(config: &Config, repo: &Repo) -> AppResult<Repo> {
     Ok(fill_status(config, vec![fresh]).remove(0))
 }
 
-/// Every bare-layout repository under the discovery roots, with `git status` of each worktree.
+/// Every repository under the discovery roots, with `git status` of each worktree.
 pub fn discover_repos(config: &Config) -> AppResult<Vec<Repo>> {
     discover_repos_with(config, Status::Read)
+}
+
+/// A repository found by the walk: a `.bare` layout or a normal checkout with a `.git` directory.
+enum Found {
+    Bare { base: PathBuf, dir: PathBuf },
+    Plain { dir: PathBuf },
 }
 
 /// Discovery on a few threads. With `Status::Skip` the worktrees come back with `dirty = None`
 /// and `fill_status` adds it later: the list shows at once and the slow part runs behind it.
 pub fn discover_repos_with(config: &Config, status: Status) -> AppResult<Vec<Repo>> {
-    let hits = find_bare_layouts(config);
-    let built = parallel_map(&hits, |(base, dir)| {
-        build_bare_repo_status(config, base, dir, Status::Skip)
-            .map_err(|e| eprintln!("warn: cannot list worktrees of {}: {}", dir.display(), e))
-            .ok()
+    let hits = find_layouts(config);
+    let built = parallel_map(&hits, |hit| match hit {
+        Found::Bare { base, dir } => build_bare_repo_status(config, base, dir, Status::Skip)
+            .map_err(|e| {
+                crate::log_warn!("cannot list worktrees of {}: {}", dir.display(), e.message)
+            })
+            .ok(),
+        Found::Plain { dir } => build_plain_repo_with(config, dir, Status::Skip)
+            .map_err(|e| {
+                crate::log_warn!("cannot list worktrees of {}: {}", dir.display(), e.message)
+            })
+            .ok(),
     });
     let repos: Vec<Repo> = built.into_iter().flatten().collect();
     let repos = match status {
@@ -54,9 +67,9 @@ pub fn discover_repos_with(config: &Config, status: Status) -> AppResult<Vec<Rep
     Ok(sorted(repos))
 }
 
-/// (discovery root, repository root) of every `<dir>/.bare` that is a bare repository.
-/// The walk itself only reads directories; the `.bare` checks run in parallel.
-fn find_bare_layouts(config: &Config) -> Vec<(PathBuf, PathBuf)> {
+/// Repositories under the discovery roots. The walk only reads directories; `.bare` is checked
+/// with git in parallel. A directory whose `.git` is a directory is a normal repository.
+fn find_layouts(config: &Config) -> Vec<Found> {
     let mut visited: HashSet<PathBuf> = HashSet::new();
     let mut hits = Vec::new();
     for root in &config.roots {
@@ -69,7 +82,12 @@ fn find_bare_layouts(config: &Config) -> Vec<(PathBuf, PathBuf)> {
             queue = Vec::new();
             for ((dir, depth), bare) in candidates.into_iter().zip(checks) {
                 if bare {
-                    hits.push((root.clone(), dir));
+                    hits.push(Found::Bare {
+                        base: root.clone(),
+                        dir,
+                    });
+                } else if dir.join(".git").is_dir() {
+                    hits.push(Found::Plain { dir });
                 } else if !dir.join(".git").exists() && depth < MAX_DEPTH {
                     // `.bare` that is not a repository: walk on below it, as before.
                     queue.extend(child_dirs(&dir, depth + 1));
@@ -80,8 +98,9 @@ fn find_bare_layouts(config: &Config) -> Vec<(PathBuf, PathBuf)> {
     hits
 }
 
-/// Breadth-first walk. Directories holding `.bare` are returned and not entered; plain clones
-/// (`.git`) are skipped; anything else is entered up to `MAX_DEPTH`.
+/// Breadth-first walk. Directories holding `.bare` or a `.git` directory are returned and not
+/// entered. A `.git` file is a linked worktree and is not a separate repository. Anything else
+/// is entered up to `MAX_DEPTH`.
 fn walk(visited: &mut HashSet<PathBuf>, start: Vec<(PathBuf, usize)>) -> Vec<(PathBuf, usize)> {
     let mut queue = VecDeque::from(start);
     let mut candidates = Vec::new();
@@ -89,7 +108,7 @@ fn walk(visited: &mut HashSet<PathBuf>, start: Vec<(PathBuf, usize)>) -> Vec<(Pa
         if !visited.insert(dir.clone()) {
             continue;
         }
-        if dir.join(BARE_DIRNAME).exists() {
+        if dir.join(BARE_DIRNAME).exists() || dir.join(".git").is_dir() {
             candidates.push((dir, depth));
         } else if !dir.join(".git").exists() && depth < MAX_DEPTH {
             queue.extend(child_dirs(&dir, depth + 1));
@@ -124,8 +143,8 @@ pub fn read_statuses(config: &Config, repos: &[Repo]) -> HashMap<PathBuf, Option
     let states = parallel_map(&paths, |path| match is_dirty(config, path) {
         Ok(dirty) => Some(dirty),
         Err(e) => {
-            eprintln!(
-                "warn: cannot read status of {}: {}",
+            crate::log_warn!(
+                "cannot read status of {}: {}",
                 path.display(),
                 e.message
             );
@@ -163,7 +182,7 @@ fn child_dirs(dir: &Path, depth: usize) -> Vec<(PathBuf, usize)> {
     let entries = match std::fs::read_dir(dir) {
         Ok(entries) => entries,
         Err(e) => {
-            eprintln!("warn: cannot scan {}: {}", dir.display(), e);
+            crate::log_warn!("cannot scan {}: {}", dir.display(), e);
             return Vec::new();
         }
     };
@@ -171,7 +190,7 @@ fn child_dirs(dir: &Path, depth: usize) -> Vec<(PathBuf, usize)> {
         .filter_map(|entry| match entry {
             Ok(entry) => Some(entry),
             Err(e) => {
-                eprintln!("warn: cannot scan {}: {}", dir.display(), e);
+                crate::log_warn!("cannot scan {}: {}", dir.display(), e);
                 None
             }
         })
@@ -191,7 +210,7 @@ fn is_scannable(entry: &std::fs::DirEntry) -> bool {
     match entry.file_type() {
         Ok(kind) => kind.is_dir() && !kind.is_symlink(),
         Err(e) => {
-            eprintln!("warn: cannot scan {}: {}", entry.path().display(), e);
+            crate::log_warn!("cannot scan {}: {}", entry.path().display(), e);
             false
         }
     }
@@ -365,7 +384,7 @@ pub fn scan_all_with(
         match open_path(config, path) {
             Ok(repo) if repos.iter().all(|r| r.root != repo.root) => repos.push(repo),
             Ok(_) => {}
-            Err(e) => eprintln!("warn: cannot rescan {}: {}", path.display(), e),
+            Err(e) => crate::log_warn!("cannot rescan {}: {}", path.display(), e),
         }
     }
     Ok(sorted(repos))
@@ -474,7 +493,11 @@ fn owning_repo(config: &Config, extra_roots: &[PathBuf], dir: &Path) -> AppResul
         let root = ensure_under_roots(config, &root)?;
         return build_bare_repo_with(config, &root, Status::Skip).map(Some);
     }
-    if extra_roots.contains(&root) {
+    let under_scan = config.roots.iter().any(|base| root.starts_with(base));
+    if common.file_name() == Some(OsStr::new(".git"))
+        && (under_scan || extra_roots.contains(&root))
+    {
+        let root = ensure_under_roots(config, &root)?;
         return build_plain_repo_with(config, &root, Status::Skip).map(Some);
     }
     Ok(None)

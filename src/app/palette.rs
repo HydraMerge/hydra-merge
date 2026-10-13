@@ -176,6 +176,11 @@ impl WorktreeBarApp {
             command("Open With: Other App…", free, Action::ChooseEditorApp),
             command("Open Skins Folder", true, Action::OpenSkinsFolder),
             command(
+                format!("Show Log Path ({})", crate::os::shortcut_log()),
+                true,
+                Action::ShowLogPath,
+            ),
+            command(
                 if self.auto_fetch {
                     "Auto-fetch: Turn Off"
                 } else {

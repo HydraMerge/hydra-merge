@@ -176,8 +176,8 @@ pub(crate) fn build_worktree(
         match is_dirty(config, &path) {
             Ok(dirty) => Some(dirty),
             Err(e) => {
-                eprintln!(
-                    "warn: cannot read status of {}: {}",
+                crate::log_warn!(
+                    "cannot read status of {}: {}",
                     path.display(),
                     e.message
                 );
@@ -313,7 +313,7 @@ fn run_with_track(
     if !out.stderr.contains("cannot set up tracking information") {
         return Err(failure(&tracked, &out));
     }
-    eprintln!("warn: {branch} has no upstream: {}", out.stderr.trim());
+    crate::log_warn!("{branch} has no upstream: {}", out.stderr.trim());
     let plain: Vec<&OsStr> = head.iter().chain(tail).copied().collect();
     let out = run_git(config, &plain, &repo.root)?;
     if out.success() {

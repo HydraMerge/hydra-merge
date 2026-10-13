@@ -37,6 +37,20 @@ fn fixture() -> Fixture {
     Fixture { tmp, config, root }
 }
 
+#[test]
+fn discover_finds_a_normal_clone() {
+    let tmp = tmp();
+    let config = test_config(&tmp.path);
+    let root = make_plain_clone(&tmp.path, &config, "grp/app");
+    let repos = discover_repos(&config).expect("discover");
+    let repo = repos
+        .iter()
+        .find(|repo| repo.root == root)
+        .expect("the clone is listed");
+    assert_eq!(repo.layout, Layout::Plain);
+    assert!(repo.worktrees.iter().any(|wt| wt.path == root && !wt.bare));
+}
+
 fn only_repo(config: &Config) -> Repo {
     let mut repos = discover_repos(config).expect("discover");
     assert_eq!(repos.len(), 1, "expected one repository");

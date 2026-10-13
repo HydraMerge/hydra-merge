@@ -151,6 +151,17 @@ pub fn shortcut_forward() -> &'static str {
     }
 }
 
+pub fn shortcut_log() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        "⌘⇧L"
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        "Ctrl+Shift+L"
+    }
+}
+
 pub fn shortcut_find() -> &'static str {
     #[cfg(target_os = "macos")]
     {

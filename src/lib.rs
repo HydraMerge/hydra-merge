@@ -5,6 +5,7 @@ pub mod discover;
 pub mod git;
 pub mod graph;
 pub mod highlight;
+pub mod log;
 pub mod model;
 pub mod os;
 pub mod pool;

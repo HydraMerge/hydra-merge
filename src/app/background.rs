@@ -219,6 +219,7 @@ impl WorktreeBarApp {
             closed_tabs: self.closed_tabs.clone(),
             extra_roots: self.extra_roots.clone(),
             scan_roots: self.scan_roots.clone(),
+            log_level: Some(crate::log::level()),
             history_width: self.history_width,
             locations_open: self.locations_open,
             auto_fetch: self.auto_fetch,
@@ -258,7 +259,7 @@ impl WorktreeBarApp {
         };
         match save_session(dir, &session) {
             Ok(()) => self.background.saved = Some(session),
-            Err(e) => eprintln!("warn: {}", e.message),
+            Err(e) => crate::log_warn!("{}", e.message),
         }
     }
 
@@ -273,6 +274,9 @@ impl WorktreeBarApp {
         self.panes.palette_recent = session.recent_commands;
         for (root, fingerprint) in &session.trusted {
             self.config.trusted.trust(root, fingerprint);
+        }
+        if let Some(level) = session.log_level {
+            crate::log::set_level(level);
         }
         self.pending_restore = Some((session.active_root, session.selected));
         if let Some(editor) = session.editor_app.as_deref().and_then(Editor::app) {

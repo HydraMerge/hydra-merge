@@ -16,6 +16,32 @@ Contract: [docs/spec.md](docs/spec.md).
 <repo_root>/<branch>/     worktree for that branch (feature/foo -> <repo_root>/feature/foo)
 ```
 
+A normal clone is found too: any directory under the scan folder whose `.git` is a directory becomes a repository. A `.git` file is a linked worktree of a repository that is already listed, so it is not a second repository.
+
+## Prepare a repository
+
+Point **Settings → Scan Folder…** at the folder that contains your repositories (by default `~/repos`).
+
+**A normal clone.** Nothing else is required:
+
+```
+git clone <url> ~/repos/group/project
+```
+
+HydraMerge lists `group/project` and opens its working copy.
+
+**One folder per branch.** Keep the git directory in `.bare` and one worktree per branch next to it:
+
+```
+mkdir -p ~/repos/group/project
+git clone --bare <url> ~/repos/group/project/.bare
+git -C ~/repos/group/project/.bare worktree add ~/repos/group/project/master master
+```
+
+A branch checked out later is added as `~/repos/group/project/<branch>`. An existing clone can be left as it is; converting it is optional.
+
+**An existing clone you do not want to move.** Choose its parent as the scan folder, or use **Open Repository by Path…** and pick the clone itself. The clone must sit inside the scan folder.
+
 ## Build and run
 
 ```
@@ -168,7 +194,8 @@ All in the settings folder (`~/Library/Application Support/hydra-merge/` on macO
 |---|---|
 | `theme.txt` | `dark` or `light`; missing means "follow the system" |
 | `autoscan.txt` | `on` or `off` (Scan at Startup); missing means off — the first window does not scan until Rescan |
-| `session.txt` | the session described above |
+| `session.txt` | the session described above, including the chosen log level |
+| `hydra-merge.log` | lines at the chosen level and the more serious ones |
 | `skin.txt` | the chosen skin's name; missing means Auto |
 | `skins/*.skin` | your skins (written only by "Create Skin from Current…") |
 
@@ -191,11 +218,14 @@ and push time out after 120 s.
 | `⌘⇧P` / `Ctrl+Shift+P` | command palette |
 | `⌘[` / `⌘]` or `Ctrl+[` / `Ctrl+]` | back / forward |
 | `⌘F` / `Ctrl+F` | filter commits |
+| `⌘⇧L` / `Ctrl+Shift+L` | show the log file path |
 | `⌘R` / `Ctrl+R` | rescan |
 | `↑` / `↓`, `Enter` | move through the worktrees in Locations, open the selected one |
 | `↑` / `↓`, `Enter`, `Esc` | in the palette: choose, run, close |
 
-While a text field has focus only the palette, back / forward and find shortcuts work; the other keys go to the field. On Windows and Linux those shortcuts use Ctrl instead of ⌘.
+While a text field has focus only the palette, back / forward, find and log-path shortcuts work; the other keys go to the field. On Windows and Linux those shortcuts use Ctrl instead of ⌘.
+
+Settings → Log Level chooses error, warn, info or debug. A level also writes the more serious lines. The choice is kept in `session.txt`. The default is info.
 
 ## Tests
 

@@ -229,7 +229,22 @@ impl WorktreeBarApp {
             )),
             None,
             Some((theme.to_string(), true, Action::ToggleTheme)),
+            None,
         ]);
+        let current = crate::log::level();
+        for level in crate::log::Level::ALL {
+            let mark = if level == current { "✓ " } else { "" };
+            entries.push(Some((
+                format!("{mark}Log Level: {}", level.as_str()),
+                true,
+                Action::SetLogLevel(level),
+            )));
+        }
+        entries.push(Some((
+            format!("Show Log Path ({})", crate::os::shortcut_log()),
+            true,
+            Action::ShowLogPath,
+        )));
         let button = icon_button(ui, p, Icon::Gear, "Settings");
         egui::Popup::menu(&button)
             .show(|ui| {

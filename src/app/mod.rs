@@ -169,6 +169,10 @@ enum Action {
     ChooseScanFolder,
     /// Forget the chosen scan folder and use the default roots again.
     ResetScanFolder,
+    /// How much is written to `hydra-merge.log`.
+    SetLogLevel(crate::log::Level),
+    /// Puts the log file path on the status line. Bound to ⌘⇧L / Ctrl+Shift+L.
+    ShowLogPath,
     CloseRepoDialog,
     Open(PathBuf),
     /// Trust the repository at this root as it is now: its config may run programs.
@@ -444,6 +448,10 @@ impl WorktreeBarApp {
         let stored = theme_dir.as_deref().and_then(theme::load_theme_choice);
         let autoscan = theme_dir.as_deref().is_some_and(theme::load_autoscan);
         theme::install(&cc.egui_ctx, stored);
+        if let Some(dir) = theme_dir.as_deref() {
+            let path = crate::log::open(dir);
+            crate::log_info!("log file {}", path.display());
+        }
         let session = theme_dir.as_deref().map(crate::session::load_session);
         let mut app = WorktreeBarApp::blank(config, theme_dir, autoscan);
         if let Some(session) = session {
