@@ -67,6 +67,8 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Only for .github/release-notes.md, the text of the release.
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -79,4 +81,4 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" dist/* \
             --repo "${GITHUB_REPOSITORY}" \
             --title "${GITHUB_REF_NAME}" \
-            --notes "macOS archives contain HydraMerge.app. Linux and Windows archives contain the hydra-merge binary. x86_64 and arm64."
+            --notes-file .github/release-notes.md
