@@ -340,10 +340,8 @@ pub fn rel_path_ok(path: &str) -> bool {
         return false;
     }
     let path = Path::new(path);
-    !path.is_absolute()
-        && path
-            .components()
-            .all(|component| !matches!(component, std::path::Component::ParentDir))
+    path.components()
+        .all(|component| matches!(component, std::path::Component::Normal(_)))
 }
 
 pub(crate) fn bad_path(path: &str) -> AppError {

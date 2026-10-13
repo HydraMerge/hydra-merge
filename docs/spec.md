@@ -650,14 +650,14 @@ Git и smerge не вызываются в потоке UI.
 
 Фикстура `make_bare_layout(tmp, "grp/repo", branches = ["master", "test", "feature/x"], worktrees = ["master", "test"])`:
 ```
-["git", "init", "-b", "master", "<tmp>/seed"]; запись README; ["git", "-C", "<tmp>/seed", "add", "README"]; ["git", "-C", "<tmp>/seed", "commit", "-m", "init"]
-["git", "clone", "--bare", "<tmp>/seed", "<tmp>/grp/repo/.bare"]
+["git", "init", "-b", "master", "<tmp>/.seed"]; запись README; ["git", "-C", "<tmp>/.seed", "add", "README"]; ["git", "-C", "<tmp>/.seed", "commit", "-m", "init"]
+["git", "clone", "--bare", "<tmp>/.seed", "<tmp>/grp/repo/.bare"]
 ["git", "--git-dir=<tmp>/grp/repo/.bare", "branch", "test", "master"]          (и другие ветки)
 ["git", "--git-dir=<tmp>/grp/repo/.bare", "worktree", "add", "<tmp>/grp/repo/master", "master"]
 ["git", "--git-dir=<tmp>/grp/repo/.bare", "worktree", "add", "<tmp>/grp/repo/test", "test"]
 ```
 (`commit` здесь — в фикстуре теста над временным seed-репозиторием, не в `src/`.)
-Фикстура `make_plain_clone(tmp, "plain")`: `["git", "clone", "<tmp>/seed", "<tmp>/plain"]`.
+Фикстура `make_plain_clone(tmp, "plain")`: `["git", "clone", "<tmp>/.seed", "<tmp>/plain"]`. Каталог `.seed` скрытый, поэтому обход его не берёт.
 
 ### 9.2 Обязательные кейсы
 
@@ -667,7 +667,7 @@ Git и smerge не вызываются в потоке UI.
 |---|---|---|
 | `discover_bare_layout` | фикстура bare; `discover_repos(&config)` | ровно один `Repo`: `Layout::Bare`, `name == "grp/repo"`, `root == canonical(<tmp>/grp/repo)`; worktree `master` и `test` с `layout_correct`, `dirty == Some(false)`, `head` из 7 hex; одна запись `bare == true` с путём `.bare` |
 | `discover_does_not_descend_into_layout` | создать `<tmp>/grp/repo/master/nested/.bare` (пустой каталог) | репозиторий найден один раз, `nested` не найден |
-| `discover_skips_hidden_node_modules_and_plain` | настоящие bare в `<tmp>/.hidden/r/.bare` и `<tmp>/node_modules/r/.bare`, plain-клон | ни один не в результате |
+| `discover_skips_hidden_and_node_modules` | настоящие bare в `<tmp>/.hidden/r/.bare` и `<tmp>/node_modules/r/.bare`, plain-клон | скрытые и `node_modules` отсутствуют; `grp/repo` и `plain` есть |
 | `bare_entry_not_openable` | `open_in_merge(&config, <root>/.bare)`; плюс проверка, что `app` не формирует для записи `bare` действие Open (функция `app::openable(&Worktree) -> bool` возвращает `false`) | `Err(code == BareNotOpenable)`; `smerge-calls.txt` не создан |
 | `parent_not_openable` | `open_in_merge(&config, <root>)` | `ParentNotOpenable`; smerge не вызван |
 | `open_passes_only_worktree_path` | `open_in_merge(&config, <root>/test)` | в `smerge-calls.txt` ровно одна строка `<canonical root>/test` |

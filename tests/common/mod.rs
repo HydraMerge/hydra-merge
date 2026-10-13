@@ -69,9 +69,9 @@ fn g(config: &Config, args: &[&str]) -> String {
     git(config, &os)
 }
 
-/// `<tmp>/seed`: one commit on `master`.
+/// `<tmp>/.seed`: one commit on `master`. The name starts with a dot so discovery skips it.
 pub fn make_seed(tmp: &Path, config: &Config) -> PathBuf {
-    let seed = tmp.join("seed");
+    let seed = tmp.join(".seed");
     if seed.exists() {
         return seed;
     }

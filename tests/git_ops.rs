@@ -114,9 +114,9 @@ fn discover_does_not_descend_into_layout() {
 }
 
 #[test]
-fn discover_skips_hidden_node_modules_and_plain() {
+fn discover_skips_hidden_and_node_modules() {
     let f = fixture();
-    let seed = f.tmp.path.join("seed");
+    let seed = f.tmp.path.join(".seed");
     for hidden in [".hidden/r", "node_modules/r"] {
         let bare = f.tmp.path.join(hidden).join(".bare");
         git(
@@ -135,7 +135,7 @@ fn discover_skips_hidden_node_modules_and_plain() {
         .into_iter()
         .map(|r| r.name)
         .collect();
-    assert_eq!(names, vec!["grp/repo".to_string()]);
+    assert_eq!(names, vec!["grp/repo".to_string(), "plain".to_string()]);
 }
 
 #[test]
@@ -495,7 +495,7 @@ fn plain_clone_marked_plain() {
     );
     assert_eq!(
         err_code(remove_worktree(&f.config, &repo.root)),
-        ErrorCode::UnknownWorktree
+        ErrorCode::PlainLayout
     );
 }
 
@@ -519,7 +519,7 @@ fn open_path_rejects_non_repo() {
     fs::create_dir_all(&dir).expect("mkdir");
     assert_eq!(err_code(open_path(&f.config, &dir)), ErrorCode::NotARepo);
     assert_eq!(
-        err_code(open_path(&f.config, &f.tmp.path.join("seed/README"))),
+        err_code(open_path(&f.config, &f.tmp.path.join(".seed/README"))),
         ErrorCode::NotARepo
     );
 }
@@ -651,21 +651,18 @@ fn staged_rename_is_listed_by_new_path_and_unstaged_whole() {
 }
 
 #[test]
-fn plain_clone_resolves_only_when_added() {
+fn plain_clone_under_scan_roots_opens() {
     let f = fixture();
     let plain = make_plain_clone(&f.tmp.path, &f.config, "plain");
     let plain = fs::canonicalize(plain).expect("canonical");
-    let refused = hydra_merge::git::open_in_merge_with(&f.config, &[], &plain);
-    assert_eq!(err_code(refused), ErrorCode::UnknownWorktree);
-    let opened =
-        hydra_merge::git::open_in_merge_with(&f.config, std::slice::from_ref(&plain), &plain);
-    assert_eq!(opened.expect("open added clone"), plain);
+    let opened = hydra_merge::git::open_in_merge_with(&f.config, &[], &plain);
+    assert_eq!(opened.expect("scan finds the clone"), plain);
 }
 
 #[test]
 fn delete_remote_branch_removes_it_on_the_remote() {
     let f = fixture();
-    let seed = f.tmp.path.join("seed");
+    let seed = f.tmp.path.join(".seed");
     let seed_arg = seed.to_str().expect("utf8");
     let bare_arg = format!("--git-dir={}", f.root.join(".bare").display());
     git_str(&f.config, &["-C", seed_arg, "branch", "topic"]);

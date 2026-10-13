@@ -444,6 +444,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn san_francisco_has_weight_axis() {
         let bytes = fs::read(SF_UI).expect("SFNS.ttf");
         let data = FontData::from_owned(bytes);
