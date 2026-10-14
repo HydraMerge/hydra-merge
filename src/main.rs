@@ -18,9 +18,9 @@ fn main() -> eframe::Result<()> {
         .with_min_inner_size([760.0, 440.0])
         .with_icon(
             eframe::icon_data::from_png_bytes(include_bytes!(
-                "../assets/macos/AppIcon-1024.png"
+                "../assets/icons/png/hydra-merge-256.png"
             ))
-            .expect("assets/macos/AppIcon-1024.png"),
+            .expect("assets/icons/png/hydra-merge-256.png"),
         );
     let viewport = match saved {
         Some([x, y, w, h]) => viewport.with_position([x, y]).with_inner_size([w, h]),
