@@ -1,3 +1,4 @@
 /target
 .claude/
 .cursor/
+.DS_Store
