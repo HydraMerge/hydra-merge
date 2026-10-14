@@ -1,11 +1,11 @@
-//! The commit list: a working-copy row on top, then commits with the branch graph, ref badges,
-//! author, date and file count.
+//! The commit list: a working-copy row on top, then commits with the branch graph. Line one is
+//! the subject, then the ref badges and the file count; line two is the author and the date.
 
 use eframe::egui::epaint::CubicBezierShape;
 
+use super::elide::{fit, Elide};
 use super::history::{can_stage, can_unstage};
 use super::history_filter::commit_matches;
-use super::elide::{fit, Elide};
 use super::*;
 use crate::git::{RefKind, RefLabel};
 
@@ -16,8 +16,19 @@ const GRAPH_LEFT: f32 = 8.0;
 const DOT_RADIUS: f32 = 4.0;
 const TEXT_SIZE: f32 = 12.0;
 const META_SIZE: f32 = 11.0;
-const BADGE_PAD: f32 = 4.0;
-const BADGE_HEIGHT: f32 = 15.0;
+const BADGE_PAD: f32 = 5.0;
+const BADGE_HEIGHT: f32 = 16.0;
+const BADGE_RADIUS: u8 = 3;
+const BADGE_GAP: f32 = 4.0;
+const BADGE_BAR: f32 = 3.0;
+/// A longer branch name loses its middle, so one ref cannot push the subject out of the row.
+const BADGE_TEXT_MAX: f32 = 160.0;
+/// Badges never take more than this share of the first line; the subject keeps the rest.
+const BADGE_SHARE: f32 = 0.5;
+/// Space between neighbours on a line (subject, badges, count; author, date).
+const GAP: f32 = 8.0;
+/// Space between the row's content and its right edge (or the scroll bar).
+const ROW_INSET: f32 = 8.0;
 
 impl WorktreeBarApp {
     /// Rows of the commit list inside `rect`. Only visible rows are drawn.
@@ -95,16 +106,10 @@ impl WorktreeBarApp {
         } else {
             p.text_strong
         };
-        line_text(
-            ui,
-            rect,
-            (x, 0),
-            &title,
-            (text_font(), fg),
-            rect.right() - 8.0,
-        );
+        let right = row_right(ui, rect);
+        line_text(ui, rect, (x, 0), &title, (text_font(), fg), right);
         let italic = italic_job("Commit Changes", p.text_muted);
-        paint_job(ui, rect, x, 1, italic, rect.right() - 8.0);
+        paint_job(ui, rect, x, 1, italic, right);
         response.clicked().then_some(Action::PickWorkingCopy)
     }
 
@@ -127,8 +132,20 @@ impl WorktreeBarApp {
             None => rect.left() + 12.0,
         };
         let lane = graph.map_or(0, |g| g.lane);
-        let right = rect.right() - 8.0;
+        let right = row_right(ui, rect);
         let count_left = file_count(ui, p, rect, right, commit.files.len());
+        let badges_right = if commit.files.is_empty() {
+            right
+        } else {
+            count_left - GAP
+        };
+        let floor = badges_right - (badges_right - x).max(0.0) * BADGE_SHARE;
+        let badges_left = ref_badges(ui, p, rect, (floor, badges_right), &commit.refs, lane);
+        let subject_right = if commit.refs.is_empty() {
+            badges_right
+        } else {
+            badges_left - GAP
+        };
         let fg = subject_color(p, selected, commit);
         line_text(
             ui,
@@ -136,20 +153,16 @@ impl WorktreeBarApp {
             (x, 0),
             &commit.subject,
             (text_font(), fg),
-            count_left - 6.0,
+            subject_right,
         );
-        let meta_left = if commit.refs.is_empty() {
-            date_text(ui, p, rect, right, &commit.date)
-        } else {
-            ref_badges(ui, p, rect, right, &commit.refs, lane)
-        };
+        let date_left = date_text(ui, p, rect, right, &commit.date);
         paint_job(
             ui,
             rect,
             x,
             1,
             italic_job(&commit.author, p.text_muted),
-            meta_left - 6.0,
+            date_left - GAP,
         );
         commit_clicks(response, self.selected.clone(), commit)
     }
@@ -168,19 +181,13 @@ fn search_all_row(ui: &mut Ui, p: &Palette, query: &str) -> Option<Action> {
     let (rect, response) = row_rect(ui, p, false);
     let x = rect.left() + 12.0;
     let title = format!("Search all history for “{query}”");
-    line_text(
-        ui,
-        rect,
-        (x, 0),
-        &title,
-        (text_font(), p.accent),
-        rect.right() - 8.0,
-    );
+    let right = row_right(ui, rect);
+    line_text(ui, rect, (x, 0), &title, (text_font(), p.accent), right);
     let hint = italic_job(
         "Messages of every branch, not only the latest 200 commits",
         p.text_muted,
     );
-    paint_job(ui, rect, x, 1, hint, rect.right() - 8.0);
+    paint_job(ui, rect, x, 1, hint, right);
     response
         .clicked()
         .then(|| Action::SearchHistory(query.to_string()))
@@ -195,7 +202,7 @@ fn note_row(ui: &mut Ui, p: &Palette, text: &str) -> Option<Action> {
         (x, 0),
         text,
         (text_font(), p.text_muted),
-        rect.right() - 8.0,
+        row_right(ui, rect),
     );
     None
 }
@@ -266,7 +273,10 @@ fn commit_menu(ui: &mut Ui, worktree: Option<PathBuf>, commit: &CommitLine) -> O
             subject: short.clone(),
             note: Some("Applies the commit onto the branch checked out here."),
             button: "Cherry-pick",
-            then: Box::new(Action::CherryPick { path: path.clone(), hash: hash.clone() }),
+            then: Box::new(Action::CherryPick {
+                path: path.clone(),
+                hash: hash.clone(),
+            }),
         }));
         ui.close();
     }
@@ -311,6 +321,19 @@ fn row_rect(ui: &mut Ui, p: &Palette, selected: bool) -> (Rect, egui::Response) 
         Stroke::new(0.5, p.row_hover_bg),
     );
     (rect, response)
+}
+
+/// Right edge for row content. egui's scroll bar floats over the content instead of taking
+/// width (`ScrollStyle::floating`, `floating_allocated_width` 0), so without this gap the date,
+/// the badges and the file count end up under the bar.
+fn row_right(ui: &Ui, rect: Rect) -> f32 {
+    let scroll = &ui.spacing().scroll;
+    let bar = if scroll.floating {
+        scroll.bar_width + scroll.bar_outer_margin
+    } else {
+        0.0
+    };
+    rect.right() - ROW_INSET - bar
 }
 
 fn lane_x(rect: Rect, lane: usize) -> f32 {
@@ -395,33 +418,114 @@ fn date_text(ui: &Ui, p: &Palette, rect: Rect, right: f32, date: &str) -> f32 {
     left
 }
 
-/// Branch and tag badges, right-aligned on the second line. Returns their left edge.
-fn ref_badges(ui: &Ui, p: &Palette, rect: Rect, right: f32, refs: &[RefLabel], lane: usize) -> f32 {
-    let mut x = right;
-    for label in refs.iter().rev() {
-        let (fill, fg, bar) = badge_colors(p, label.kind, lane);
-        let galley = ui
-            .painter()
-            .layout_no_wrap(label.name.clone(), meta_font(), fg);
-        let bar_w = if bar.is_some() { 3.0 } else { 0.0 };
-        let size = vec2(galley.size().x + 2.0 * BADGE_PAD + bar_w, BADGE_HEIGHT);
-        let badge = Rect::from_min_size(pos2(x - size.x, line_y(rect, 1) - size.y / 2.0), size);
-        if badge.left() < rect.center().x {
-            break;
-        }
-        ui.painter().rect_filled(badge, 3.0, fill);
-        if let Some(bar) = bar {
-            let strip = Rect::from_min_size(badge.min, vec2(bar_w, size.y));
-            ui.painter().rect_filled(strip, 1.0, bar);
-        }
-        let at = pos2(
-            badge.left() + bar_w + BADGE_PAD,
-            badge.center().y - galley.size().y / 2.0,
-        );
-        ui.painter().galley(at, galley, fg);
-        x = badge.left() - 4.0;
+/// One measured ref badge.
+struct Badge {
+    galley: std::sync::Arc<egui::Galley>,
+    fill: Color32,
+    fg: Color32,
+    bar: Option<Color32>,
+}
+
+impl Badge {
+    fn width(&self) -> f32 {
+        let bar = if self.bar.is_some() { BADGE_BAR } else { 0.0 };
+        self.galley.size().x + 2.0 * BADGE_PAD + bar
     }
-    x
+}
+
+fn measure_badge(ui: &Ui, text: String, colors: (Color32, Color32, Option<Color32>)) -> Badge {
+    let (fill, fg, bar) = colors;
+    let shown = fit(
+        ui,
+        &text,
+        &meta_font(),
+        BADGE_TEXT_MAX,
+        Elide::for_name(&text),
+    );
+    let galley = ui.painter().layout_no_wrap(shown, meta_font(), fg);
+    Badge {
+        galley,
+        fill,
+        fg,
+        bar,
+    }
+}
+
+/// How many of the badges (in order) fit in `room`, leaving space for a "+N" badge when some
+/// do not. `more(n)` is the width of the "+n" badge.
+fn badges_that_fit(widths: &[f32], room: f32, more: impl Fn(usize) -> f32) -> usize {
+    let row = |k: usize| widths[..k].iter().sum::<f32>() + BADGE_GAP * k.saturating_sub(1) as f32;
+    if row(widths.len()) <= room {
+        return widths.len();
+    }
+    (0..widths.len())
+        .rev()
+        .find(|&k| {
+            let extra = more(widths.len() - k) + if k > 0 { BADGE_GAP } else { 0.0 };
+            row(k) + extra <= room
+        })
+        .unwrap_or(0)
+}
+
+/// Branch and tag badges on the first line, right-aligned between `span.0` and `span.1`.
+/// Refs that do not fit are counted in a trailing "+N" badge. Returns the left edge.
+fn ref_badges(
+    ui: &Ui,
+    p: &Palette,
+    rect: Rect,
+    span: (f32, f32),
+    refs: &[RefLabel],
+    lane: usize,
+) -> f32 {
+    let (floor, right) = span;
+    let badges: Vec<Badge> = refs
+        .iter()
+        .map(|label| measure_badge(ui, label.name.clone(), badge_colors(p, label.kind, lane)))
+        .collect();
+    let widths: Vec<f32> = badges.iter().map(Badge::width).collect();
+    let more = |n: usize| measure_badge(ui, format!("+{n}"), more_colors(p));
+    let shown = badges_that_fit(&widths, right - floor, |n| more(n).width());
+    let hidden = badges.len() - shown;
+    let mut row: Vec<Badge> = badges.into_iter().take(shown).collect();
+    if hidden > 0 {
+        row.push(more(hidden));
+    }
+    let total =
+        row.iter().map(Badge::width).sum::<f32>() + BADGE_GAP * row.len().saturating_sub(1) as f32;
+    let left = right - total;
+    let mut x = left;
+    for badge in row {
+        x = paint_badge(ui, rect, x, badge) + BADGE_GAP;
+    }
+    left
+}
+
+/// Paints `badge` with its left edge at `x` on the first line; returns its right edge.
+fn paint_badge(ui: &Ui, rect: Rect, x: f32, badge: Badge) -> f32 {
+    let size = vec2(badge.width(), BADGE_HEIGHT);
+    let rect = Rect::from_min_size(pos2(x, line_y(rect, 0) - size.y / 2.0), size);
+    let painter = ui.painter();
+    painter.rect_filled(rect, BADGE_RADIUS, badge.fill);
+    let mut text_left = rect.left() + BADGE_PAD;
+    if let Some(bar) = badge.bar {
+        let strip = Rect::from_min_size(rect.min, vec2(BADGE_BAR, size.y));
+        let left_side = egui::CornerRadius {
+            nw: BADGE_RADIUS,
+            sw: BADGE_RADIUS,
+            ne: 0,
+            se: 0,
+        };
+        painter.rect_filled(strip, left_side, bar);
+        text_left += BADGE_BAR;
+    }
+    let at = pos2(text_left, rect.center().y - badge.galley.size().y / 2.0);
+    painter.galley(at, badge.galley, badge.fg);
+    rect.right()
+}
+
+/// The "+N" badge for refs that did not fit.
+fn more_colors(p: &Palette) -> (Color32, Color32, Option<Color32>) {
+    (p.badge_bg, p.text_muted, None)
 }
 
 /// (fill, text, side bar): the checked-out branch is solid, other local branches carry the
@@ -504,6 +608,16 @@ mod tests {
             path: "f".to_string(),
             orig_path: None,
         }
+    }
+
+    #[test]
+    fn badges_never_pass_their_room() {
+        let more = |_: usize| 10.0;
+        assert_eq!(badges_that_fit(&[30.0, 30.0], 64.0, more), 2);
+        assert_eq!(badges_that_fit(&[30.0, 30.0], 63.0, more), 1);
+        assert_eq!(badges_that_fit(&[30.0, 30.0, 30.0], 50.0, more), 1);
+        assert_eq!(badges_that_fit(&[30.0], 20.0, more), 0);
+        assert_eq!(badges_that_fit(&[], 0.0, more), 0);
     }
 
     #[test]
