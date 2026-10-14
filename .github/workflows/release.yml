@@ -66,6 +66,9 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      # Sigstore signing of the build provenance and storing it as a GitHub attestation.
+      id-token: write
+      attestations: write
     steps:
       # Only for .github/release-notes.md, the text of the release.
       - uses: actions/checkout@v4
@@ -73,11 +76,18 @@ jobs:
         with:
           path: dist
           merge-multiple: true
+      - name: Checksums
+        run: (cd dist && sha256sum -- * > SHA256SUMS)
+      # Attests exactly the archives that are published below, so
+      # `gh attestation verify <archive> --repo HydraMerge/hydra-merge` ties a download to this
+      # workflow run and tag. SHA256SUMS is not attested: it is derived from the archives.
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist/hydra-merge-*
       - name: GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          (cd dist && sha256sum -- * > SHA256SUMS)
           gh release create "${GITHUB_REF_NAME}" dist/* \
             --repo "${GITHUB_REPOSITORY}" \
             --title "${GITHUB_REF_NAME}" \

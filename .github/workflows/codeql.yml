@@ -1,0 +1,39 @@
+name: codeql
+
+# Advanced setup instead of the repository's default setup: a workflow file gives a status
+# badge and keeps the query suite and schedule in review. Do not also turn on default setup
+# in Settings: GitHub refuses advanced-setup uploads while default setup is enabled.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # `none`: CodeQL reads Rust sources and workflow files without compiling them.
+        language: [rust, actions]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}

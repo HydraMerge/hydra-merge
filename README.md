@@ -10,6 +10,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/HydraMerge/hydra-merge/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/HydraMerge/hydra-merge/actions/workflows/ci.yml/badge.svg?branch=main" alt="ci"></a>
+  <a href="https://github.com/HydraMerge/hydra-merge/actions/workflows/codeql.yml?query=branch%3Amain"><img src="https://github.com/HydraMerge/hydra-merge/actions/workflows/codeql.yml/badge.svg?branch=main" alt="codeql"></a>
+  <a href="https://github.com/HydraMerge/hydra-merge/actions/workflows/release.yml"><img src="https://github.com/HydraMerge/hydra-merge/actions/workflows/release.yml/badge.svg" alt="release"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/HydraMerge/hydra-merge/releases/latest">Download</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="docs/guide.md">Guide</a> ·
@@ -79,6 +85,13 @@ Archives are named `hydra-merge-<tag>-<target>`, with the targets from the table
 
 ```
 shasum -a 256 -c SHA256SUMS --ignore-missing
+```
+
+Each archive also carries a signed build provenance attestation (from v0.1.15): it proves the file was built
+by this repository's release workflow from the tagged commit. Check it with the GitHub CLI:
+
+```
+gh attestation verify hydra-merge-<tag>-<target>.zip --repo HydraMerge/hydra-merge
 ```
 
 **macOS**: unzip `hydra-merge-<tag>-aarch64-apple-darwin.zip` (Apple silicon) or `-x86_64-apple-darwin.zip` (Intel)
