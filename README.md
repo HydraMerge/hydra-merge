@@ -14,6 +14,8 @@
   <a href="https://github.com/HydraMerge/hydra-merge/actions/workflows/codeql.yml?query=branch%3Amain"><img src="https://github.com/HydraMerge/hydra-merge/actions/workflows/codeql.yml/badge.svg?branch=main" alt="codeql"></a>
   <a href="https://github.com/HydraMerge/hydra-merge/actions/workflows/release.yml"><img src="https://github.com/HydraMerge/hydra-merge/actions/workflows/release.yml/badge.svg" alt="release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/HydraMerge/hydra-merge" alt="license"></a>
+  <a href="https://github.com/HydraMerge/hydra-merge/releases"><img src="https://img.shields.io/github/downloads/HydraMerge/hydra-merge/total" alt="downloads"></a>
+  <a href="https://github.com/HydraMerge/hydra-merge/releases/latest"><img src="https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-informational" alt="platforms: macOS, Windows, Linux"></a>
 </p>
 
 <p align="center">
