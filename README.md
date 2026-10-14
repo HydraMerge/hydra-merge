@@ -48,7 +48,7 @@ whichever one you click.
 | **Create in one click** | A worktree for a local or remote branch lands at `<repo>/<branch>`, tracking set up. Remove a clean one after one confirmation. |
 | **Work in place** | Commit graph, diffs with syntax colours, stage, commit, fetch, pull, push. Open the folder in Sublime Text, VS Code, Cursor, Zed, a JetBrains IDE or Terminal. |
 | **Keyboard first** | `Cmd+Shift+P` command palette over every action, back / forward, filters. |
-| **Safe by design** | No `checkout`, `reset`, `clean`, `rebase` or `--force`, ever. Hooks and filters of an untrusted repository do not run until you say so. |
+| **Safe by design** | No `checkout`, `reset`, `clean` or `--force`, ever; merge and rebase only after you confirm. Hooks and filters of an untrusted repository do not run until you say so. |
 | **Yours** | Nine built-in skins and your own as a small text file. macOS, Windows, Linux, x86_64 and arm64, one binary, no server. |
 
 <p align="center">

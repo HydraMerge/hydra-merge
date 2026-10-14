@@ -194,7 +194,8 @@ All in the settings folder (`~/Library/Application Support/hydra-merge/` on macO
 
 ## What it never does
 
-- `checkout`, `switch`, `reset`, `clean`, `merge`, `rebase`, `prune`
+- `checkout`, `switch`, `reset`, `clean`, `prune`
+- `merge` or `rebase` without asking: both run only from a branch's menu, into the open worktree, after confirmation
 - `--force` for any git command, including push
 - deleting untracked files
 - deleting the `.bare` directory or any file on its own

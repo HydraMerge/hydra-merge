@@ -356,8 +356,9 @@ fn run_with_timeout(cmd: Command, timeout: Duration) -> AppResult<GitOutput>;  /
   родитель опрашивает `child.try_wait()` каждые 20 мс до `GIT_TIMEOUT`. По истечении — `child.kill()`, `child.wait()`, `GitTimeout`.
 - Ошибка `spawn` → `Io` (`failed to run git: <err>`).
 - Пользовательские значения (ветка, пути) идут **после** опций. Ветка не может начинаться с `-` (§5.5), пути абсолютные.
-- Запрещённые подкоманды и флаги (не встречаются как строковые литералы в `src/git.rs`, `src/discover.rs`, `src/model.rs`): `checkout`, `switch`, `reset`, `clean`,
-  `merge`, `rebase`, `branch -d/-D`, `--force`, `-f`, `worktree prune`. Удаление `.bare`,
+- Запрещённые подкоманды и флаги (не встречаются как строковые литералы в `src/git/*.rs`, `src/discover.rs`, `src/model.rs`): `checkout`, `switch`, `reset`, `clean`,
+  `merge`, `rebase`, `branch -D`, `--force`, `-f`, `worktree prune`. Исключение: `merge` и `rebase` в `src/git/refs.rs`
+  (`merge_ref`, `rebase_onto`), только в открытый worktree и только после подтверждения в окне. Удаление `.bare`,
   `fs::remove_dir_all` и `fs::remove_file` в `src/` запрещены. Это проверяет тест `source_has_no_forbidden_git` (§9).
 - Разрешённые записи в выбранный worktree: `add` (`-- <path>` или `--all`), `restore --staged`, `restore --worktree --source=HEAD` (только отслеживаемый файл, с подтверждением в окне), `commit -m`, `fetch`, `pull --no-edit`, `push`. Пустое сообщение и путь с `..`, абсолютный или начинающийся с `-` отклоняются до запуска git. Fetch, pull и push используют `NETWORK_TIMEOUT` (120 с); остальные команды — `GIT_TIMEOUT`. `--force` не передаётся.
 
@@ -683,7 +684,7 @@ Git и smerge не вызываются в потоке UI.
 | `plain_clone_marked_plain` | `open_path(&config, <tmp>/plain)`; затем `create_worktree` для его root | `Layout::Plain`, один worktree; create → `PlainLayout` |
 | `config_from_values_defaults` | `Config::from_values(<tmp>/home, None, None)` при созданном `<tmp>/home/repos` | roots = `<tmp>/home/repos`; smerge = `DEFAULT_SMERGE` |
 | `roots_are_temp_only` | `common::test_config` | каждый root лежит под `tmp`; ни один не равен и не лежит под настоящим `~/repos` |
-| `source_has_no_forbidden_git` | `include_str!` для `src/git.rs`, `src/discover.rs`, `src/model.rs` (строковые литералы, точное совпадение) и для всех `src/*.rs` (вызовы) | в первых трёх файлах нет литералов `"checkout"`, `"switch"`, `"reset"`, `"clean"`, `"merge"`, `"rebase"`, `"prune"`, `"--force"`, `"-f"`, `"-D"`, `"sh"`, `"-c"`; во всех `src/*.rs` нет `remove_dir_all`, `remove_file`, `git2` (тексты UI в `app.rs`, например «clean», под литеральную проверку не попадают). `commit`, `push`, `fetch`, `pull` разрешены как argv из §7.0 |
+| `source_has_no_forbidden_git` | `include_str!` для `src/git/*.rs`, `src/discover.rs`, `src/model.rs` (строковые литералы, точное совпадение) и для всех `src/*.rs` (вызовы) | в этих файлах нет литералов `"checkout"`, `"switch"`, `"reset"`, `"clean"`, `"merge"`, `"rebase"` (кроме `"merge"` и `"rebase"` в `src/git/refs.rs`), `"prune"`, `"--force"`, `"-f"`, `"-D"`, `"sh"`, `"-c"`; во всех `src/*.rs` нет `remove_dir_all`, `remove_file`, `git2` (тексты UI в `app.rs`, например «clean», под литеральную проверку не попадают). `commit`, `push`, `fetch`, `pull` разрешены как argv из §7.0 |
 
 Юнит-тесты (`#[cfg(test)]`):
 
@@ -740,7 +741,7 @@ Git и smerge не вызываются в потоке UI.
 - **Контекстное меню веток (правый клик).**
   - На удалённой ветке: Create Local Branch (`git branch --track <branch> <remote>/<branch>`, с тем же запасным путём без `--track`), Create Worktree, Delete (с подтверждением), Copy name.
   - На локальной ветке: Open in Sublime Text и Show Worktree, если ветка занята; Create Worktree, если свободна; Copy name.
-  - Checkout, Merge и Rebase в это меню не добавляются (§ «What it never does»).
+  - Checkout в это меню не добавляется (§ «What it never does»). Merge и Rebase идут только через подтверждение (§7.0).
 - **Без обхода корней.** Проверка пути перед действием (§6) больше не сканирует discovery roots:
   1. `git -C <path> rev-parse --git-common-dir` находит репозиторий.
   2. Если это `<root>/.bare`, используется bare-раскладка.

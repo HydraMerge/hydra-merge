@@ -889,10 +889,18 @@ fn source_has_no_forbidden_git() {
         "checkout", "switch", "reset", "clean", "merge", "rebase", "prune", "--force", "-f", "-D",
         "sh", "-c",
     ];
+    // `merge_ref` and `rebase_onto` in refs.rs run `git merge` / `git rebase` into the open
+    // worktree, and only after the user confirms it (`Action::MergeRef` / `Action::RebaseOnto`
+    // behind `Confirm`). Every other guarded file still may not name them.
+    let allowed: &[(&str, &[&str])] = &[("src/git/refs.rs", &["merge", "rebase"])];
     for (name, src) in guarded {
+        let exempt = allowed
+            .iter()
+            .find(|(file, _)| *file == name)
+            .map_or(&[][..], |(_, lits)| *lits);
         for lit in string_literals(src) {
             assert!(
-                !forbidden_literals.contains(&lit.as_str()),
+                !forbidden_literals.contains(&lit.as_str()) || exempt.contains(&lit.as_str()),
                 "{name} has literal {lit:?}"
             );
         }
