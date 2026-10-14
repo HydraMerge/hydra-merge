@@ -49,7 +49,7 @@
 - Python-части `README.md`: разделы про `python3 hydra_merge.py`, `--port`, `127.0.0.1:8765`, HTTP-проверки (`Host`, `Origin`,
   `Content-Type`, лимит тела), `python3 -m unittest`. README переписывается под Rust по §10.
 
-`docs/` (кроме этого файла) не меняются. `/Applications` и `~/repos` не меняются: приложение туда не пишет,
+`docs/` (кроме этого файла) не меняется. `/Applications` и `~/repos` не меняются: приложение туда не пишет,
 установка `.app` в `/Applications` не входит в объём работ.
 
 ---
@@ -314,7 +314,7 @@ Discovery только читает и ничего не пишет.
 ### 5.7 Запись `.bare` в списке worktree
 
 `git --git-dir=<root>/.bare worktree list --porcelain` первой записью выдаёт сам `.bare` со строкой `bare`. Эта запись:
-- попадает в `Repo::worktrees` с `bare: true` и показывается в списке серым как «.bare (bare)», чтобы список совпадал со списком веток;
+- попадает в `Repo::worktrees` с `bare: true` и показывается в списке серым как «.bare (bare)»;
 - **не выбирается** в левой панели и **не предлагается** для Open/Remove: строка неактивна, кнопки не рисуются;
   `open_in_merge`/`remove_worktree` для неё возвращают `BareNotOpenable` (защита в глубину);
 - не проверяется `status`, `dirty = None`.
