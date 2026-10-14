@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=HydraMerge
+Comment=Browse and manage git worktrees
+Exec=hydra-merge
+Icon=hydra-merge
+Terminal=false
+Categories=Development;RevisionControl;
+StartupWMClass=hydra-merge

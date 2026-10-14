@@ -13,7 +13,7 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$binary" "$app/Contents/MacOS/hydra-merge"
 chmod +x "$app/Contents/MacOS/hydra-merge"
 
-cp "$root/assets/macos/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
+cp "$root/assets/icons/macos/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
 
 cat > "$app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
