@@ -4,6 +4,10 @@ on:
   push:
     tags: ["v*"]
 
+# Read-only token for every job; a job that writes (release `publish`) asks for more itself.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: build (${{ matrix.target }})
