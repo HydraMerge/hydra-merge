@@ -84,3 +84,15 @@ jobs:
           name: hydra-merge-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ matrix.artifact }}
           if-no-files-found: error
+
+  # Known vulnerabilities (RustSec), licenses and crate sources, as configured in deny.toml.
+  # The advisory database grows daily, so this job can turn red without a code change:
+  # update the crate, or add the advisory to `ignore` in deny.toml with the reason.
+  deny:
+    name: cargo-deny
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
