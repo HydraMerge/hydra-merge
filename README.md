@@ -13,6 +13,7 @@
   <a href="https://github.com/HydraMerge/hydra-merge/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/HydraMerge/hydra-merge/actions/workflows/ci.yml/badge.svg?branch=main" alt="ci"></a>
   <a href="https://github.com/HydraMerge/hydra-merge/actions/workflows/codeql.yml?query=branch%3Amain"><img src="https://github.com/HydraMerge/hydra-merge/actions/workflows/codeql.yml/badge.svg?branch=main" alt="codeql"></a>
   <a href="https://github.com/HydraMerge/hydra-merge/actions/workflows/release.yml"><img src="https://github.com/HydraMerge/hydra-merge/actions/workflows/release.yml/badge.svg" alt="release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/HydraMerge/hydra-merge" alt="license"></a>
 </p>
 
 <p align="center">
@@ -111,3 +112,7 @@ Later versions arrive through [Updates](docs/guide.md#updates).
 - [Guide](docs/guide.md): all features, environment variables, skins, files it writes, updates, keyboard shortcuts.
 - [Spec](docs/spec.md): the contract the app and its tests follow.
 - Build from source: `cargo run --release` (Rust stable, git 2.20+). See [Build and run](docs/guide.md#build-and-run).
+
+## License
+
+[MIT](LICENSE).
