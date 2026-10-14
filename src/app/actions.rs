@@ -553,6 +553,26 @@ fn repo_job(action: Action) -> Option<(String, WriteWork)> {
             format!("Deleted {remote}/{branch}"),
             Box::new(move |c, _| delete_remote_branch(c, &root, &remote, &branch)),
         ),
+        Action::CherryPick { path, hash } => (
+            format!("Cherry-picked {hash}"),
+            Box::new(move |c, e| cherry_pick(c, e, &path, &hash)),
+        ),
+        Action::RevertCommit { path, hash } => (
+            format!("Reverted {hash}"),
+            Box::new(move |c, e| revert_commit(c, e, &path, &hash)),
+        ),
+        Action::MergeRef { path, branch } => (
+            format!("Merged {branch}"),
+            Box::new(move |c, e| merge_ref(c, e, &path, &branch)),
+        ),
+        Action::RebaseOnto { path, branch } => (
+            format!("Rebased onto {branch}"),
+            Box::new(move |c, e| rebase_onto(c, e, &path, &branch)),
+        ),
+        Action::DeleteBranch { root, branch } => (
+            format!("Deleted branch {branch}"),
+            Box::new(move |c, _| delete_local_branch(c, &root, &branch)),
+        ),
         _ => return None,
     };
     Some(job)

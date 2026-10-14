@@ -195,6 +195,30 @@ impl WorktreeBarApp {
         if let Some(compare) = self.compare_with(repo, branch) {
             items.push((format!("Compare with {branch}"), !busy, compare));
         }
+        if let Some(path) = self.selected.clone() {
+            let current = self
+                .selected_worktree(repo)
+                .and_then(|wt| wt.branch.clone());
+            if current.as_deref() != Some(branch) {
+                items.push((
+                    format!("Merge {branch} into this worktree"),
+                    !busy,
+                    merge_confirm(&path, branch),
+                ));
+                items.push((
+                    format!("Rebase this worktree onto {branch}"),
+                    !busy,
+                    rebase_confirm(&path, branch),
+                ));
+            }
+        }
+        if used.is_none() {
+            items.push((
+                format!("Delete Branch {branch}…"),
+                !busy,
+                delete_branch_confirm(&repo.root, branch),
+            ));
+        }
         items.push((
             format!("Copy '{branch}'"),
             true,
@@ -266,8 +290,8 @@ impl WorktreeBarApp {
         menu.or(clicked)
     }
 
-    /// Right click on a remote branch. Checkout is "Create Worktree" here;
-    /// merge and rebase are not offered (the app never runs them).
+    /// Right click on a remote branch. Checkout is "Create Worktree" here.
+    /// Merge and rebase use the remote-tracking name `remote/branch`.
     fn remote_menu(&self, ui: &mut Ui, repo: &Repo, remote: &str, branch: &str) -> Option<Action> {
         let name = format!("{remote}/{branch}");
         let busy = self.busy();
@@ -298,8 +322,21 @@ impl WorktreeBarApp {
                 !busy,
                 delete_remote_confirm(&repo.root, remote, branch),
             ),
-            (format!("Copy '{name}'"), true, Action::Copy(name.clone())),
         ];
+        let mut items = items;
+        if let Some(path) = self.selected.clone() {
+            items.push((
+                format!("Merge {name} into this worktree"),
+                !busy,
+                merge_confirm(&path, &name),
+            ));
+            items.push((
+                format!("Rebase this worktree onto {name}"),
+                !busy,
+                rebase_confirm(&path, &name),
+            ));
+        }
+        items.push((format!("Copy '{name}'"), true, Action::Copy(name.clone())));
         let compare = self.compare_with(repo, &name);
         let items = items
             .into_iter()

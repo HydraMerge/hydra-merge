@@ -151,7 +151,7 @@ impl WorktreeBarApp {
             italic_job(&commit.author, p.text_muted),
             meta_left - 6.0,
         );
-        commit_clicks(response, commit)
+        commit_clicks(response, self.selected.clone(), commit)
     }
 }
 
@@ -225,30 +225,60 @@ fn working_title(files: &[FileChange]) -> String {
 }
 
 /// Hover shows the full hash and author; a click opens the commit, a right click its menu.
-fn commit_clicks(response: egui::Response, commit: &CommitLine) -> Option<Action> {
+fn commit_clicks(
+    response: egui::Response,
+    worktree: Option<PathBuf>,
+    commit: &CommitLine,
+) -> Option<Action> {
     let hover = format!("{}\n{} <{}>", commit.full, commit.author, commit.email);
     let response = response.on_hover_text(hover);
     let mut menu = None;
-    response.context_menu(|ui| menu = commit_menu(ui, commit));
+    response.context_menu(|ui| menu = commit_menu(ui, worktree.clone(), commit));
     let clicked = response
         .clicked()
         .then(|| Action::PickCommit(commit.hash.clone()));
     menu.or(clicked)
 }
 
-/// Right click on a commit: copy its hash or subject.
-fn commit_menu(ui: &mut Ui, commit: &CommitLine) -> Option<Action> {
-    let items = [
+/// Right click on a commit: copy it, or cherry-pick / revert it into the open worktree.
+fn commit_menu(ui: &mut Ui, worktree: Option<PathBuf>, commit: &CommitLine) -> Option<Action> {
+    let mut picked = None;
+    let copies = [
         ("Copy Commit Hash", commit.full.clone()),
         ("Copy Short Hash", commit.hash.clone()),
         ("Copy Subject", commit.subject.clone()),
     ];
-    let mut picked = None;
-    for (label, text) in items {
+    for (label, text) in copies {
         if ui.button(label).clicked() {
             picked = Some(Action::Copy(text));
             ui.close();
         }
+    }
+    let Some(path) = worktree else {
+        return picked;
+    };
+    ui.separator();
+    let hash = commit.full.clone();
+    let short = commit.hash.clone();
+    if ui.button("Cherry-pick into this worktree").clicked() {
+        picked = Some(Action::Ask(Confirm {
+            title: "Cherry-pick this commit?",
+            subject: short.clone(),
+            note: Some("Applies the commit onto the branch checked out here."),
+            button: "Cherry-pick",
+            then: Box::new(Action::CherryPick { path: path.clone(), hash: hash.clone() }),
+        }));
+        ui.close();
+    }
+    if ui.button("Revert this commit").clicked() {
+        picked = Some(Action::Ask(Confirm {
+            title: "Revert this commit?",
+            subject: short,
+            note: Some("Adds a new commit that undoes this one."),
+            button: "Revert",
+            then: Box::new(Action::RevertCommit { path, hash }),
+        }));
+        ui.close();
     }
     picked
 }

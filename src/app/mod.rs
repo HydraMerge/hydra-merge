@@ -44,8 +44,9 @@ use crate::diff_view;
 use crate::discover::{open_path, reload_repo, scan_all_with};
 use crate::git::Status;
 use crate::git::{
-    apply_stash, branches, choose_app, choose_folder, commit_patch, commit_worktree,
-    create_tracking_branch, create_tracking_worktree, create_worktree, delete_remote_branch,
+    apply_stash, branches, cherry_pick, choose_app, choose_folder, commit_patch, commit_worktree,
+    create_tracking_branch, create_tracking_worktree, create_worktree, delete_local_branch,
+    delete_remote_branch, merge_ref, rebase_onto, revert_commit,
     discard_file, discard_paths, drop_stash, fetch_worktree, inspect_worktree, open_child_dir_with,
     open_worktree_with, pull_worktree, push_worktree, remove_worktree_with, stage_file,
     stage_paths, unstage_paths, BranchList, CommitLine, Editor, FileChange, PushDone, WorktreeView,
@@ -263,6 +264,16 @@ enum Action {
         remote: String,
         branch: String,
     },
+    /// `git cherry-pick` of `hash` into the open worktree.
+    CherryPick { path: PathBuf, hash: String },
+    /// `git revert --no-edit` of `hash` in the open worktree.
+    RevertCommit { path: PathBuf, hash: String },
+    /// `git merge --no-edit` of `branch` into the open worktree.
+    MergeRef { path: PathBuf, branch: String },
+    /// `git rebase` of the open worktree onto `branch`.
+    RebaseOnto { path: PathBuf, branch: String },
+    /// `git branch -d` when no worktree has the branch checked out.
+    DeleteBranch { root: PathBuf, branch: String },
     /// `git branch --track <branch> <remote>/<branch>`, no worktree.
     CreateBranch {
         root: PathBuf,
@@ -313,6 +324,45 @@ fn delete_remote_confirm(root: &Path, remote: &str, branch: &str) -> Action {
         then: Box::new(Action::DeleteRemote {
             root: root.to_path_buf(),
             remote: remote.to_string(),
+            branch: branch.to_string(),
+        }),
+    })
+}
+
+fn merge_confirm(path: &Path, branch: &str) -> Action {
+    Action::Ask(Confirm {
+        title: "Merge into this worktree?",
+        subject: branch.to_string(),
+        note: Some("Merges that branch into the one checked out here."),
+        button: "Merge",
+        then: Box::new(Action::MergeRef {
+            path: path.to_path_buf(),
+            branch: branch.to_string(),
+        }),
+    })
+}
+
+fn rebase_confirm(path: &Path, branch: &str) -> Action {
+    Action::Ask(Confirm {
+        title: "Rebase this worktree?",
+        subject: branch.to_string(),
+        note: Some("Replays the checked-out commits on top of that branch."),
+        button: "Rebase",
+        then: Box::new(Action::RebaseOnto {
+            path: path.to_path_buf(),
+            branch: branch.to_string(),
+        }),
+    })
+}
+
+fn delete_branch_confirm(root: &Path, branch: &str) -> Action {
+    Action::Ask(Confirm {
+        title: "Delete this branch?",
+        subject: branch.to_string(),
+        note: Some("Deletes a branch that is not checked out. Git refuses one that is not merged."),
+        button: "Delete",
+        then: Box::new(Action::DeleteBranch {
+            root: root.to_path_buf(),
             branch: branch.to_string(),
         }),
     })

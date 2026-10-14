@@ -314,6 +314,116 @@ pub fn drop_stash(
     run_in_worktree(config, extra_roots, path, &args, GIT_TIMEOUT)
 }
 
+fn commit_hash_ok(hash: &str) -> bool {
+    (7..=40).contains(&hash.len()) && hash.chars().all(|c| c.is_ascii_hexdigit())
+}
+
+fn ref_name_ok(name: &str) -> bool {
+    branch_syntax_error(name).is_none() && !name.starts_with('-')
+}
+
+/// `git cherry-pick <hash>` in the open worktree.
+pub fn cherry_pick(
+    config: &Config,
+    extra_roots: &[PathBuf],
+    path: &Path,
+    hash: &str,
+) -> AppResult<PathBuf> {
+    if !commit_hash_ok(hash) {
+        return Err(AppError::new(
+            ErrorCode::GitFailed,
+            format!("Not a commit hash: {hash}"),
+        ));
+    }
+    let args = [os("cherry-pick"), os(hash)];
+    run_in_worktree(config, extra_roots, path, &args, GIT_TIMEOUT)
+}
+
+/// `git revert --no-edit <hash>` in the open worktree.
+pub fn revert_commit(
+    config: &Config,
+    extra_roots: &[PathBuf],
+    path: &Path,
+    hash: &str,
+) -> AppResult<PathBuf> {
+    if !commit_hash_ok(hash) {
+        return Err(AppError::new(
+            ErrorCode::GitFailed,
+            format!("Not a commit hash: {hash}"),
+        ));
+    }
+    let args = [os("revert"), os("--no-edit"), os(hash)];
+    run_in_worktree(config, extra_roots, path, &args, GIT_TIMEOUT)
+}
+
+/// `git merge --no-edit <branch>` into the open worktree.
+pub fn merge_ref(
+    config: &Config,
+    extra_roots: &[PathBuf],
+    path: &Path,
+    branch: &str,
+) -> AppResult<PathBuf> {
+    if !ref_name_ok(branch) {
+        return Err(AppError::new(
+            ErrorCode::InvalidBranch,
+            format!("Invalid branch name '{branch}'"),
+        ));
+    }
+    let args = [os("merge"), os("--no-edit"), os(branch)];
+    run_in_worktree(config, extra_roots, path, &args, GIT_TIMEOUT)
+}
+
+/// `git rebase <branch>` of the open worktree onto that branch.
+pub fn rebase_onto(
+    config: &Config,
+    extra_roots: &[PathBuf],
+    path: &Path,
+    branch: &str,
+) -> AppResult<PathBuf> {
+    if !ref_name_ok(branch) {
+        return Err(AppError::new(
+            ErrorCode::InvalidBranch,
+            format!("Invalid branch name '{branch}'"),
+        ));
+    }
+    let args = [os("rebase"), os(branch)];
+    run_in_worktree(config, extra_roots, path, &args, GIT_TIMEOUT)
+}
+
+/// `git branch -d`. Refuses a branch that a worktree still has checked out.
+pub fn delete_local_branch(config: &Config, repo_root: &Path, branch: &str) -> AppResult<PathBuf> {
+    if !ref_name_ok(branch) {
+        return Err(AppError::new(
+            ErrorCode::InvalidBranch,
+            format!("Invalid branch name '{branch}'"),
+        ));
+    }
+    let repo = resolve_repo(config, repo_root)?;
+    if repo
+        .worktrees
+        .iter()
+        .any(|wt| wt.branch.as_deref() == Some(branch))
+    {
+        return Err(AppError::new(
+            ErrorCode::BranchInUse,
+            format!("'{branch}' is checked out in a worktree"),
+        ));
+    }
+    let dir_arg = git_dir_arg(&repo.git_dir);
+    let args = [
+        dir_arg.as_os_str(),
+        os("branch"),
+        os("-d"),
+        os(branch),
+    ];
+    let out = run_git(config, &args, &repo.root)?;
+    if out.success() {
+        Ok(repo.root)
+    } else {
+        Err(failure(&args, &out))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
