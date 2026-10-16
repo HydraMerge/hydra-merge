@@ -69,6 +69,11 @@ impl WorktreeBarApp {
             Action::Ask(confirm) => self.confirm = Some(confirm),
             Action::Remove(path) => self.start_remove(ctx, path),
             Action::Create(root, branch) => self.start_create(ctx, root, branch),
+            Action::OpenSparse(root, branch) => self.start_sparse_folders(ctx, root, branch),
+            Action::CreateSparse(root, branch, folders) => {
+                self.start_create_sparse(ctx, root, branch, folders)
+            }
+            Action::CloseSparse => self.sparse_dialog = None,
             Action::CreateRemote {
                 root,
                 remote,
@@ -569,6 +574,10 @@ fn repo_job(action: Action) -> Option<(String, WriteWork)> {
             format!("Rebased onto {branch}"),
             Box::new(move |c, e| rebase_onto(c, e, &path, &branch)),
         ),
+        Action::ShowAllFiles(path) => (
+            format!("Showing all files in {}", path.display()),
+            Box::new(move |c, e| show_all_files(c, e, &path)),
+        ),
         Action::DeleteBranch { root, branch } => (
             format!("Deleted branch {branch}"),
             Box::new(move |c, _| delete_local_branch(c, &root, &branch)),
@@ -650,6 +659,7 @@ fn needs_job(action: &Action) -> bool {
             | Action::FindRepository
             | Action::OpenRepoDialog
             | Action::CloseRepoDialog
+            | Action::CloseSparse
             | Action::PickRemote { .. }
             | Action::PickTag { .. }
             | Action::PickStash { .. }

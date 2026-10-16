@@ -4,6 +4,7 @@ mod actions;
 mod background;
 mod central;
 mod clean_card;
+mod sparse_dialog;
 mod commits;
 mod compare;
 mod dialogs;
@@ -45,7 +46,8 @@ use crate::discover::{open_path, reload_repo, scan_all_with};
 use crate::git::Status;
 use crate::git::{
     apply_stash, branches, cherry_pick, choose_app, choose_folder, commit_patch, commit_worktree,
-    create_tracking_branch, create_tracking_worktree, create_worktree, delete_local_branch,
+    create_sparse_worktree, create_tracking_branch, create_tracking_worktree, create_worktree,
+    delete_local_branch, show_all_files, top_folders,
     delete_remote_branch, merge_ref, rebase_onto, revert_commit,
     discard_file, discard_paths, drop_stash, fetch_worktree, inspect_worktree, open_child_dir_with,
     open_worktree_with, pull_worktree, push_worktree, remove_worktree_with, stage_file,
@@ -92,6 +94,8 @@ enum JobResult {
     EditorAppChosen(AppResult<Option<PathBuf>>),
     Compared(CompareKey, AppResult<Arc<DiffView>>),
     Searched(PathBuf, String, AppResult<Vec<CommitLine>>),
+    /// Top-level folders of a branch, for the sparse worktree window: (repo root, branch, folders).
+    SparseFolders(PathBuf, String, AppResult<Vec<String>>),
 }
 
 /// State of the panes that is not git data: comparison, history filter, picked files.
@@ -121,6 +125,13 @@ struct PaneState {
     repo_search_open: bool,
     /// Focus the Repositories filter on the next frame (⌘L or the magnifier).
     repo_focus: bool,
+}
+
+/// The "Create Sparse Worktree" window: the branch's top-level folders, each with a checkbox.
+struct SparseDialog {
+    root: PathBuf,
+    branch: String,
+    folders: Vec<(String, bool)>,
 }
 
 /// The "Open Repository" window: a path typed or picked in the folder picker.
@@ -206,6 +217,13 @@ enum Action {
     Ask(Confirm),
     Remove(PathBuf),
     Create(PathBuf, String),
+    /// Reads the branch's top-level folders, then opens the sparse worktree window.
+    OpenSparse(PathBuf, String),
+    /// `create_sparse_worktree` for (repo root, branch, folders).
+    CreateSparse(PathBuf, String, Vec<String>),
+    CloseSparse,
+    /// `git sparse-checkout disable` in that worktree.
+    ShowAllFiles(PathBuf),
     AddPath,
     Rescan,
     ToggleAutoscan,
@@ -458,6 +476,7 @@ pub struct WorktreeBarApp {
     status: String,
     /// "Open Repository" window while it is shown.
     open_dialog: Option<OpenDialog>,
+    sparse_dialog: Option<SparseDialog>,
     confirm: Option<Confirm>,
     /// Width of the history column set by dragging; `None` follows the window width.
     history_width: Option<f32>,
@@ -574,6 +593,7 @@ impl WorktreeBarApp {
             error: None,
             status: if autoscan { "" } else { "Auto-scan is off" }.to_string(),
             open_dialog: None,
+            sparse_dialog: None,
             confirm: None,
             history_width: None,
             reveal_tab: true,
@@ -750,6 +770,7 @@ impl eframe::App for WorktreeBarApp {
         actions.extend(self.central(ui, p, &repos));
         actions.extend(self.confirm_dialog(&ctx, p));
         actions.extend(self.open_repo_dialog(&ctx, p));
+        actions.extend(self.sparse_dialog(&ctx, p));
         actions.extend(self.palette_ui(&ctx, p, &repos));
         // Back / forward move through the history themselves; anything else that changes the
         // shown place is recorded so ◀ can return to it.

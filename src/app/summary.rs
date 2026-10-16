@@ -108,7 +108,7 @@ impl WorktreeBarApp {
         let busy = self.busy();
         let files = &data.view.files;
         if files.is_empty() {
-            return self.clean_card(ui, p, repo, wt);
+            return self.clean_card(ui, p, repo, wt, data.view.sparse.as_deref());
         }
         let staged: Vec<&FileChange> = files.iter().filter(|f| can_unstage(&f.code)).collect();
         let untracked: Vec<&FileChange> = files.iter().filter(|f| f.code == "??").collect();

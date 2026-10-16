@@ -442,6 +442,21 @@ pub struct BranchList { pub available: Vec<String>, pub used: Vec<(String, PathB
    содержит `already exists` → `DestExists`; иначе `GitFailed`.
 8. Возвращает новый `Worktree` из свежего `list_worktrees`.
 
+### 7.7a Sparse worktree: `pub fn create_sparse_worktree(config, repo_root: &Path, branch: &str, folders: &[String]) -> AppResult<Worktree>`
+
+Worktree, в котором на диск записаны только выбранные папки верхнего уровня ветки (`git sparse-checkout`,
+cone mode). Файлы в корне ветки cone mode записывает всегда.
+
+1. Проверки п.1-5 §7.7 (общая функция `create_preflight`).
+2. `top_folders`: `["git", "--git-dir=<root>/.bare", "ls-tree", "-d", "--name-only", "-z", "refs/heads/<branch>"]`.
+   Пустой список папок, папка не из этого списка, имя с `/`, начинающееся с `-` или с `..` → `UnknownFolder`.
+   git ничего не записал.
+3. `ensure_trusted`: файлы пишутся через фильтры репозитория.
+4. `worktree add --no-checkout <dest> <branch>`, затем в `<dest>`: `sparse-checkout set --cone <folders...>` и
+   `read-tree -mu HEAD`. Ошибка после `worktree add` сообщает, что worktree создан без файлов.
+5. `sparse_folders`: `sparse-checkout list`; ошибка со словами `not sparse` → `None` (полный worktree).
+   `show_all_files`: `sparse-checkout disable`, ничего не удаляет, после подтверждения в окне.
+
 ### 7.8 Remove worktree — `pub fn remove_worktree(config, path: &Path) -> AppResult<PathBuf>`
 
 1. `resolve_worktree` (§6). `Layout::Plain` → `PlainLayout`; путь равен main worktree plain-репо → `MainWorktree`.

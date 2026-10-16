@@ -880,6 +880,7 @@ fn source_has_no_forbidden_git() {
             include_str!("../src/git/worktrees.rs"),
         ),
         ("src/git/refs.rs", include_str!("../src/git/refs.rs")),
+        ("src/git/sparse.rs", include_str!("../src/git/sparse.rs")),
         ("src/git/changes.rs", include_str!("../src/git/changes.rs")),
         ("src/git/editor.rs", include_str!("../src/git/editor.rs")),
         ("src/discover.rs", include_str!("../src/discover.rs")),

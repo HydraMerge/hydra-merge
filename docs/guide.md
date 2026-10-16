@@ -66,6 +66,10 @@ program. The folder picker uses the system dialog (`osascript`, `zenity`/`kdialo
   why a folder cannot be opened is shown in the window.
 - **Create a worktree** at `<repo_root>/<branch>` for a free local branch, or from a remote branch
   (`worktree add --track -b`). A branch already checked out elsewhere leads to its worktree instead.
+- **Create a sparse worktree** (right click on a free local branch → Create Sparse Worktree…, or the palette):
+  pick the top-level folders you need, and only those are written to disk (`git sparse-checkout`, cone mode;
+  files at the root of the branch always are). In a large monorepo a worktree then costs the slice you work on,
+  not the whole tree. The worktree's card lists its folders, and **Show All Files…** makes it a full worktree.
 - **Create a local branch** from a remote branch (`git branch --track`) without a worktree.
 - **Remove** a clean, unlocked worktree after confirmation. Dirty or locked worktrees are refused.
 - **Delete a remote branch** (`git push --delete <remote> refs/heads/<branch>`) after confirmation.

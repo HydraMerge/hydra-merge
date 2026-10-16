@@ -93,6 +93,26 @@ impl WorktreeBarApp {
         });
     }
 
+    pub(super) fn start_sparse_folders(&mut self, ctx: &Context, root: PathBuf, branch: String) {
+        self.spawn(ctx, move |config, _| {
+            let folders = top_folders(&config, &root, &branch);
+            JobResult::SparseFolders(root, branch, folders)
+        });
+    }
+
+    pub(super) fn start_create_sparse(
+        &mut self,
+        ctx: &Context,
+        root: PathBuf,
+        branch: String,
+        folders: Vec<String>,
+    ) {
+        self.sparse_dialog = None;
+        self.spawn(ctx, move |config, _| {
+            JobResult::Created(create_sparse_worktree(&config, &root, &branch, &folders))
+        });
+    }
+
     pub(super) fn start_add_path(&mut self, ctx: &Context) {
         let Some(dialog) = self.open_dialog.as_mut() else {
             return;
@@ -141,6 +161,7 @@ impl WorktreeBarApp {
             JobResult::EditorAppChosen(r) => self.on_editor_app_chosen(r),
             JobResult::Compared(key, r) => self.on_compared(key, r),
             JobResult::Searched(path, query, r) => self.on_searched(path, query, r),
+            JobResult::SparseFolders(root, branch, r) => self.on_sparse_folders(root, branch, r),
         }
     }
 
@@ -231,6 +252,30 @@ impl WorktreeBarApp {
                 self.hold_status = true;
                 self.selected = Some(wt.path.clone());
                 self.start_reload(ctx, wt.path);
+            }
+            Err(e) => self.set_error(e),
+        }
+    }
+
+    /// A branch without folders has nothing to choose, so the window says so instead of opening.
+    pub(super) fn on_sparse_folders(
+        &mut self,
+        root: PathBuf,
+        branch: String,
+        result: AppResult<Vec<String>>,
+    ) {
+        match result {
+            Ok(folders) if folders.is_empty() => {
+                self.status = format!("{branch} has no folders; use Create Worktree");
+                self.hold_status = true;
+            }
+            Ok(folders) => {
+                let folders = folders.into_iter().map(|f| (f, false)).collect();
+                self.sparse_dialog = Some(SparseDialog {
+                    root,
+                    branch,
+                    folders,
+                });
             }
             Err(e) => self.set_error(e),
         }

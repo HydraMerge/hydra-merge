@@ -324,7 +324,7 @@ fn run_with_track(
 }
 
 /// The new worktree from a fresh list; only its own status is read.
-fn find_created(config: &Config, repo: &Repo, dest: PathBuf) -> AppResult<Worktree> {
+pub(crate) fn find_created(config: &Config, repo: &Repo, dest: PathBuf) -> AppResult<Worktree> {
     let fresh = list_worktrees_with(config, &repo.root, &repo.git_dir, repo.layout, Status::Skip)?;
     let created = std::fs::canonicalize(&dest).unwrap_or(dest);
     let wt = fresh
@@ -381,6 +381,19 @@ pub(crate) fn ref_exists(config: &Config, repo: &Repo, full_ref: &str) -> AppRes
 // ---------------------------------------------------------------------------
 
 pub fn create_worktree(config: &Config, repo_root: &Path, branch: &str) -> AppResult<Worktree> {
+    let (repo, dest) = create_preflight(config, repo_root, branch)?;
+    run_worktree_add(config, &repo, branch, &dest, false)?;
+    find_created(config, &repo, dest)
+}
+
+/// Checks shared by every way of creating a worktree for a local branch: a `.bare` layout, a
+/// valid existing branch that no worktree holds, and a free `<repo_root>/<branch>`. Returns the
+/// repository and that destination; nothing is written yet.
+pub(crate) fn create_preflight(
+    config: &Config,
+    repo_root: &Path,
+    branch: &str,
+) -> AppResult<(Repo, PathBuf)> {
     let root = ensure_under_roots(config, repo_root)?;
     let repo = resolve_repo(config, &root)?;
     if repo.layout == Layout::Plain {
@@ -394,8 +407,7 @@ pub fn create_worktree(config: &Config, repo_root: &Path, branch: &str) -> AppRe
     }
     let dest = layout_path_for(&repo.root, branch)?;
     check_destination(&dest, &listed)?;
-    run_worktree_add(config, &repo, branch, &dest)?;
-    find_created(config, &repo, dest)
+    Ok((repo, dest))
 }
 
 pub(crate) fn plain_layout_error() -> AppError {
@@ -440,15 +452,14 @@ pub(crate) fn run_worktree_add(
     repo: &Repo,
     branch: &str,
     dest: &Path,
+    no_checkout: bool,
 ) -> AppResult<()> {
     let dir_arg = git_dir_arg(&repo.git_dir);
-    let args = [
-        dir_arg.as_os_str(),
-        os("worktree"),
-        os("add"),
-        dest.as_os_str(),
-        os(branch),
-    ];
+    let mut args = vec![dir_arg.as_os_str(), os("worktree"), os("add")];
+    if no_checkout {
+        args.push(os("--no-checkout"));
+    }
+    args.extend([dest.as_os_str(), os(branch)]);
     let out = run_git(config, &args, &repo.root)?;
     if out.success() {
         return Ok(());

@@ -6,6 +6,7 @@ mod editor;
 mod network;
 mod process;
 mod refs;
+mod sparse;
 mod worktrees;
 
 pub use changes::*;
@@ -14,6 +15,7 @@ pub use editor::*;
 pub use network::*;
 pub use process::*;
 pub use refs::*;
+pub use sparse::*;
 pub use worktrees::*;
 
 use std::ffi::{OsStr, OsString};

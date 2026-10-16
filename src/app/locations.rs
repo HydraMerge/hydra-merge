@@ -186,11 +186,19 @@ impl WorktreeBarApp {
                 ));
                 items.push(("Show Worktree".into(), true, Action::Select(path.clone())));
             }
-            None => items.push((
-                format!("Create Worktree for {branch}"),
-                !busy && repo.layout == Layout::Bare,
-                Action::Create(repo.root.clone(), branch.to_string()),
-            )),
+            None => {
+                let bare = !busy && repo.layout == Layout::Bare;
+                items.push((
+                    format!("Create Worktree for {branch}"),
+                    bare,
+                    Action::Create(repo.root.clone(), branch.to_string()),
+                ));
+                items.push((
+                    "Create Sparse Worktree…".into(),
+                    bare,
+                    Action::OpenSparse(repo.root.clone(), branch.to_string()),
+                ));
+            }
         }
         if let Some(compare) = self.compare_with(repo, branch) {
             items.push((format!("Compare with {branch}"), !busy, compare));

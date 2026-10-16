@@ -159,6 +159,8 @@ pub enum ErrorCode {
     AuthRequired,
     /// The repository's own config or hooks can run programs and the user has not trusted them.
     UntrustedRepo,
+    /// A folder name for a sparse worktree that is not a top-level folder of the branch.
+    UnknownFolder,
     Io,
 }
 

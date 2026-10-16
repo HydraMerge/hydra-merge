@@ -218,6 +218,11 @@ impl WorktreeBarApp {
                 free && bare,
                 create,
             ));
+            list.push(command(
+                format!("Create Sparse Worktree: {branch}"),
+                free && bare,
+                Action::OpenSparse(repo.root.clone(), branch.clone()),
+            ));
         }
         for remote in &state.list.remotes {
             for branch in &remote.branches {

@@ -54,7 +54,7 @@ whichever one you click.
 | | |
 |---|---|
 | **See everything** | All repositories under your scan folder, all worktrees of each, with clean / modified / locked state. |
-| **Create in one click** | A worktree for a local or remote branch lands at `<repo>/<branch>`, tracking set up. Remove a clean one after one confirmation. |
+| **Create in one click** | A worktree for a local or remote branch lands at `<repo>/<branch>`, tracking set up. A sparse worktree holds only the folders you pick. Remove a clean one after one confirmation. |
 | **Work in place** | Commit graph, diffs with syntax colours, stage, commit, fetch, pull, push. Open the folder in Sublime Text, VS Code, Cursor, Zed, a JetBrains IDE or Terminal. |
 | **Keyboard first** | `Cmd+Shift+P` command palette over every action, back / forward, filters. |
 | **Safe by design** | No `checkout`, `reset`, `clean` or `--force`, ever; merge and rebase only after you confirm. Hooks and filters of an untrusted repository do not run until you say so. |

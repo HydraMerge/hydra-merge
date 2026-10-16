@@ -60,6 +60,8 @@ pub struct WorktreeView {
     pub staged_diff: String,
     /// `Name <email>` from git config; `None` when it is not set.
     pub author: Option<String>,
+    /// The folders of a sparse worktree; `None` for a full one (or when git could not tell).
+    pub sparse: Option<Vec<String>>,
 }
 
 /// Global git option placed before `add` and `restore`: a file name from `status` is a path, not
@@ -97,6 +99,7 @@ pub fn inspect_worktree(
         unstaged_diff: working_diff(config, &wt.path, false),
         staged_diff: working_diff(config, &wt.path, true),
         author: author_line(config, &wt.path),
+        sparse: sparse_list(config, &wt.path).ok().flatten(),
     })
 }
 
