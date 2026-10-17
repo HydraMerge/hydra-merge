@@ -278,6 +278,9 @@ impl WorktreeBarApp {
             if picked.is_none() {
                 picked = log_level_menu(ui);
             }
+            if picked.is_none() {
+                picked = date_format_menu(ui, self.date_format);
+            }
             let show_log = format!("Show Log Path ({})", crate::os::shortcut_log());
             if ui.button(show_log).clicked() {
                 picked = Some(Action::ShowLogPath);
@@ -294,6 +297,21 @@ impl WorktreeBarApp {
         });
         picked
     }
+}
+
+/// ⚙ → Preferences → Date Format: each entry shows a sample date; a mark sits on the active one.
+fn date_format_menu(ui: &mut Ui, current: DateFormat) -> Option<Action> {
+    let mut picked = None;
+    ui.menu_button("Date Format", |ui| {
+        for format in DateFormat::ALL {
+            let mark = if format == current { "✓ " } else { "" };
+            if ui.button(format!("{mark}{}", format.label())).clicked() {
+                picked = Some(Action::SetDateFormat(format));
+                ui.close();
+            }
+        }
+    });
+    picked
 }
 
 /// ⚙ → Log Level: error, warn, info, debug. A mark sits on the active one.

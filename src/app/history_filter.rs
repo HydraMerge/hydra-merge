@@ -102,7 +102,7 @@ mod tests {
             hash: "9dc2f1d".to_string(),
             author: "Ruslan Khakimov".to_string(),
             email: "r@example.com".to_string(),
-            date: "Thu, 8 Oct, 23:39".to_string(),
+            time: None,
             parents: Vec::new(),
             refs: vec![RefLabel {
                 name: "origin/fix/redis-oom".to_string(),

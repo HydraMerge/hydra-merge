@@ -164,14 +164,15 @@ pub(super) fn change_color(p: &Palette, code: &str) -> Color32 {
     }
 }
 
-fn commit_header(ui: &mut Ui, p: &Palette, commit: &CommitLine) {
+fn commit_header(ui: &mut Ui, p: &Palette, commit: &CommitLine, date_format: DateFormat) {
     ui.label(
         RichText::new(&commit.subject)
             .heading()
             .color(p.text_strong),
     );
     ui.add_space(2.0);
-    let byline = format!("{} <{}>  ·  {}", commit.author, commit.email, commit.date);
+    let date = commit.date_text(date_format);
+    let byline = format!("{} <{}>  ·  {date}", commit.author, commit.email);
     ui.label(RichText::new(byline).color(p.text_muted));
     ui.label(
         RichText::new(&commit.full)
@@ -207,9 +208,10 @@ pub(super) fn commit_detail(
     commit: &CommitLine,
     patch: Option<&PatchState>,
     path: &Path,
+    date_format: DateFormat,
 ) {
     let hash = commit.hash.as_str();
-    commit_header(ui, p, commit);
+    commit_header(ui, p, commit, date_format);
     commit_files(ui, p, commit);
     ui.add_space(8.0);
     ui.label(RichText::new("DIFF").small().color(p.sidebar_heading_fg));

@@ -133,7 +133,7 @@ impl WorktreeBarApp {
             listed.into_iter().find(|c| c.hash == hash)
         });
         if let Some(commit) = commit {
-            commit_detail(ui, p, commit, self.patch.as_ref(), &wt.path);
+            commit_detail(ui, p, commit, self.patch.as_ref(), &wt.path, self.date_format);
             return Vec::new();
         }
         self.summary_pane(ui, p, repo, wt, data)

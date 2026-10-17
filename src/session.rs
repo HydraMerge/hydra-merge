@@ -4,6 +4,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::datefmt::DateFormat;
 use crate::model::{AppError, AppResult};
 
 const SESSION_FILENAME: &str = "session.txt";
@@ -26,6 +27,8 @@ pub struct Session {
     pub history_width: Option<f32>,
     pub locations_open: bool,
     pub auto_fetch: bool,
+    /// How commit dates are written.
+    pub date_format: DateFormat,
     /// Commands run from the palette, newest first.
     pub recent_commands: Vec<String>,
     /// The app Open uses (`.app` bundle path); `None` means Sublime Text.
@@ -47,6 +50,7 @@ impl Default for Session {
             history_width: None,
             locations_open: true,
             auto_fetch: false,
+            date_format: DateFormat::default(),
             recent_commands: Vec::new(),
             editor_app: None,
             trusted: Vec::new(),
@@ -94,6 +98,7 @@ impl Session {
             "auto_fetch",
             if self.auto_fetch { "on" } else { "off" }.to_string(),
         );
+        put("date_format", self.date_format.key().to_string());
         self.recent_commands
             .iter()
             .for_each(|c| put("recent", c.clone()));
@@ -133,6 +138,9 @@ impl Session {
             }
             "locations" => self.locations_open = value != "off",
             "auto_fetch" => self.auto_fetch = value == "on",
+            "date_format" => {
+                self.date_format = DateFormat::from_key(value).unwrap_or(self.date_format);
+            }
             "recent" => self.recent_commands.push(value.to_string()),
             "editor_app" => self.editor_app = Some(path()),
             "trusted" => {
@@ -195,6 +203,7 @@ mod tests {
             history_width: Some(420.5),
             locations_open: false,
             auto_fetch: true,
+            date_format: DateFormat::UsNumeric,
             recent_commands: vec!["Push".to_string(), "Worktree: master".to_string()],
             editor_app: Some(PathBuf::from("/Applications/Visual Studio Code.app")),
             trusted: vec![(
@@ -225,6 +234,12 @@ mod tests {
         assert_eq!(session.window, None);
         assert_eq!(session.history_width, None);
         assert_eq!(session.active_root, Some(PathBuf::from("/r/x")));
+    }
+
+    #[test]
+    fn an_unknown_date_format_keeps_the_default() {
+        assert_eq!(Session::parse("date_format\tklingon\n").date_format, DateFormat::Europe);
+        assert_eq!(Session::parse("date_format\tiso\n").date_format, DateFormat::Iso);
     }
 
     #[test]

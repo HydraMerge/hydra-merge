@@ -40,6 +40,7 @@ use eframe::egui::{
     Stroke, TextEdit, TextStyle, Ui, Vec2,
 };
 
+use crate::datefmt::DateFormat;
 use crate::diff::{parse_diff, DiffView, RowKind};
 use crate::diff_view;
 use crate::discover::{open_path, reload_repo, scan_all_with};
@@ -199,6 +200,8 @@ enum Action {
     ResetScanFolder,
     /// How much is written to `hydra-merge.log`.
     SetLogLevel(crate::log::Level),
+    /// How commit dates are written; kept in the session.
+    SetDateFormat(DateFormat),
     /// Puts the log file path on the status line. Bound to ⌘⇧L / Ctrl+Shift+L.
     ShowLogPath,
     /// Asks GitHub for a newer release now.
@@ -506,6 +509,8 @@ pub struct WorktreeBarApp {
     /// Comparison, history filter and picked files of the open worktree.
     panes: PaneState,
     auto_fetch: bool,
+    /// How commit dates are written (⚙ → Preferences → Date Format).
+    date_format: DateFormat,
     background: background::Background,
     skins: skins::Skins,
     editors: Editors,
@@ -612,6 +617,7 @@ impl WorktreeBarApp {
             queued: None,
             panes: PaneState::default(),
             auto_fetch: false,
+            date_format: DateFormat::default(),
             background: background::Background::default(),
             skins: skins::Skins::default(),
             editors: Editors::installed(),

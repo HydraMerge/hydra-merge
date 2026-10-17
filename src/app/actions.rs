@@ -83,6 +83,7 @@ impl WorktreeBarApp {
             Action::ChooseScanFolder => self.start_choose_scan_folder(ctx),
             Action::ResetScanFolder => self.reset_scan_folder(ctx),
             Action::SetLogLevel(level) => self.set_log_level(level),
+            Action::SetDateFormat(format) => self.set_date_format(format),
             Action::ShowLogPath => self.show_log_path(),
             Action::CheckUpdate => self.schedule_update_check(ctx, true),
             Action::InstallUpdate => self.install_update(ctx),
@@ -120,6 +121,12 @@ impl WorktreeBarApp {
         crate::log::set_level(level);
         crate::log_info!("log level {}", level.as_str());
         self.status = format!("Log level: {}", level.as_str());
+        self.hold_status = true;
+    }
+
+    fn set_date_format(&mut self, format: DateFormat) {
+        self.date_format = format;
+        self.status = format!("Date format: {}", format.name());
         self.hold_status = true;
     }
 
@@ -675,5 +682,6 @@ fn needs_job(action: &Action) -> bool {
             | Action::DismissLink
             | Action::CloseCompare
             | Action::ToggleAutoFetch
+            | Action::SetDateFormat(_)
     )
 }

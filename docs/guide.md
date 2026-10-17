@@ -134,6 +134,10 @@ program. The folder picker uses the system dialog (`osascript`, `zenity`/`kdialo
 - **Outside changes** (a worktree added, moved or removed in a terminal, a branch moved, something staged) are
   noticed within seconds and only that repository is reloaded. The open worktree is read again when the window
   gets focus.
+- **Date format** (⚙ → Preferences → Date Format, or "Date Format:" in the palette): commit dates always show the
+  year. Choose Europe (`Wed, 15 Nov 2023, 15:07`), Europe numeric (`15.11.2023 15:07`), US
+  (`Wed, Nov 15, 2023, 3:07 PM`), US numeric (`11/15/2023 3:07 PM`) or ISO 8601 (`2023-11-15 15:07`). The date is
+  shown in the author's time zone; the choice is kept in `session.txt`.
 - **Auto-fetch** (⚙ → Fetch Automatically): `git fetch --all` of the open repository every 5 minutes; a failure
   only shows in the status line. A repository that is not trusted (below) is skipped.
 - **Trust**: a repository that arrives as a whole folder (an archive, a copy) brings its own git config and hooks,

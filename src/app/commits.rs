@@ -155,7 +155,8 @@ impl WorktreeBarApp {
             (text_font(), fg),
             subject_right,
         );
-        let date_left = date_text(ui, p, rect, right, &commit.date);
+        let date = commit.date_text(self.date_format);
+        let date_left = date_text(ui, p, rect, right, &date);
         paint_job(
             ui,
             rect,

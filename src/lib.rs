@@ -1,4 +1,5 @@
 pub mod app;
+pub mod datefmt;
 pub mod diff;
 pub mod diff_view;
 pub mod discover;

@@ -231,6 +231,21 @@ fn stage_commit_refuses_empty_message_and_parent_path() {
 }
 
 #[test]
+fn history_dates_come_with_a_year_in_every_format() {
+    use hydra_merge::datefmt::DateFormat;
+    let f = fixture();
+    let view = inspect_worktree(&f.config, &[], &f.root.join("master")).expect("inspect");
+    let commit = view.commits.first().expect("a commit");
+    assert!(commit.time.is_some(), "git printed no usable date");
+    let year: i32 = commit.date_text(DateFormat::Iso)[..4].parse().expect("year");
+    assert!(year >= 2024, "year {year}");
+    for format in DateFormat::ALL {
+        let text = commit.date_text(format);
+        assert!(text.contains(&year.to_string()), "{format:?}: {text}");
+    }
+}
+
+#[test]
 fn discard_restores_tracked_file() {
     let f = fixture();
     let wt = f.root.join("master");

@@ -223,6 +223,7 @@ impl WorktreeBarApp {
             history_width: self.history_width,
             locations_open: self.locations_open,
             auto_fetch: self.auto_fetch,
+            date_format: self.date_format,
             recent_commands: self.panes.palette_recent.clone(),
             editor_app: match &self.editors.current {
                 Editor::App { path, .. } => Some(path.clone()),
@@ -271,6 +272,7 @@ impl WorktreeBarApp {
         self.history_width = session.history_width;
         self.locations_open = session.locations_open;
         self.auto_fetch = session.auto_fetch;
+        self.date_format = session.date_format;
         self.panes.palette_recent = session.recent_commands;
         for (root, fingerprint) in &session.trusted {
             self.config.trusted.trust(root, fingerprint);

@@ -1,6 +1,7 @@
 //! Status, history, patches and the allowed writes in one worktree.
 
 use super::*;
+use crate::datefmt::{CommitTime, DateFormat};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FileChange {
@@ -23,8 +24,8 @@ pub struct CommitLine {
     pub hash: String,
     pub author: String,
     pub email: String,
-    /// `Fri, 2 Oct, 10:52`.
-    pub date: String,
+    /// When it was committed, in the author's time zone; `None` if git printed something else.
+    pub time: Option<CommitTime>,
     /// Full hashes of the parents; two or more for a merge.
     pub parents: Vec<String>,
     /// Branches and tags pointing at this commit.
@@ -32,6 +33,13 @@ pub struct CommitLine {
     pub subject: String,
     pub body: String,
     pub files: Vec<CommitFile>,
+}
+
+impl CommitLine {
+    /// The commit date written the way the user chose; empty when git gave no usable date.
+    pub fn date_text(&self, format: DateFormat) -> String {
+        self.time.map(|t| t.format(format)).unwrap_or_default()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -124,7 +132,7 @@ pub(crate) fn read_log_with(
         os("-n"),
         os(HISTORY_LIMIT),
         os("--decorate=full"),
-        os("--date=format:%a, %e %b, %H:%M"),
+        os("--date=raw"),
         os("--name-status"),
         os(LOG_FORMAT),
     ];
@@ -229,7 +237,7 @@ fn parse_log_record(fields: &[&str; LOG_FIELDS]) -> Option<CommitLine> {
         hash: hash.to_string(),
         author: author.to_string(),
         email: email.to_string(),
-        date: date.split_whitespace().collect::<Vec<_>>().join(" "),
+        time: CommitTime::parse_raw(date),
         parents: parents.into_iter().map(str::to_string).collect(),
         refs: parse_decorations(refs),
         subject: subject.to_string(),
@@ -550,7 +558,7 @@ mod tests {
         let full = "a".repeat(40);
         let (p1, p2) = ("b".repeat(40), "c".repeat(40));
         let log = parse_log(&format!(
-            "\0{full}\0aaaaaaa\0Ada\0ada@ex\0Fri,  2 Oct, 10:52\0{p1} {p2}\0\
+            "\0{full}\0aaaaaaa\0Ada\0ada@ex\01700000000 +0500\0{p1} {p2}\0\
              HEAD -> refs/heads/master, refs/remotes/origin/master, tag: refs/tags/v1, refs/heads/mr/1\
              \0init\0the body\0\nM\tREADME\n"
         ));
@@ -559,10 +567,7 @@ mod tests {
         assert_eq!(log[0].hash, "aaaaaaa");
         assert_eq!(log[0].author, "Ada");
         assert_eq!(log[0].email, "ada@ex");
-        assert_eq!(
-            log[0].date, "Fri, 2 Oct, 10:52",
-            "double spaces from %e are folded"
-        );
+        assert_eq!(log[0].date_text(DateFormat::Europe), "Wed, 15 Nov 2023, 03:13");
         assert_eq!(log[0].parents, vec![p1, p2]);
         let refs: Vec<(&str, RefKind)> = log[0]
             .refs

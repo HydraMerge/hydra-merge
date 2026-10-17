@@ -413,3 +413,41 @@ fn trust_card_screenshots() {
         );
     }
 }
+
+#[test]
+#[ignore = "needs a GPU; run with --ignored"]
+fn date_format_screenshots() {
+    let t = tmp();
+    let config = test_config(&t.path);
+    fake_smerge(&t.path);
+    demo(&t.path, &config);
+    let settings = t.path.join("settings");
+    fs::create_dir_all(&settings).expect("settings");
+    fs::write(settings.join("autoscan.txt"), "on\n").expect("autoscan");
+    fs::write(settings.join("theme.txt"), "dark\n").expect("theme");
+    let (cfg, dir) = (config.clone(), settings.clone());
+    let mut harness = Harness::builder()
+        .with_size(SIZE)
+        .with_theme(egui::Theme::Dark)
+        .wgpu()
+        .build_eframe(move |cc| WorktreeBarApp::with_settings_dir(cc, cfg, Some(dir)));
+    settle(&mut harness);
+    click(&mut harness, egui::pos2(33.0, 108.0));
+    shot(&mut harness, "dates-europe");
+    for (query, name) in [
+        ("date format: us, numeric", "dates-us-numeric"),
+        ("date format: iso", "dates-iso"),
+        ("date format: us (", "dates-us"),
+    ] {
+        run_palette(&mut harness, query);
+        shot(&mut harness, name);
+    }
+    click(&mut harness, egui::pos2(560.0, 224.0));
+    shot(&mut harness, "dates-commit-view-us");
+    click(&mut harness, egui::pos2(1380.0, 54.0));
+    click(&mut harness, egui::pos2(888.0, 148.0));
+    harness.get_by_label_contains("Date Format").click();
+    settle(&mut harness);
+    shot(&mut harness, "dates-menu");
+    key(&mut harness, egui::Key::Escape, egui::Modifiers::NONE);
+}

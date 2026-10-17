@@ -85,6 +85,10 @@ impl WorktreeBarApp {
         list.extend(
             skins.map(|name| command(format!("Skin: {name}"), true, Action::SetSkin(name))),
         );
+        list.extend(DateFormat::ALL.into_iter().map(|format| {
+            let label = format!("Date Format: {}", format.label());
+            command(label, true, Action::SetDateFormat(format))
+        }));
         list.extend(self.editors.known.iter().map(|editor| {
             let label = format!("Open With: {}", editor.name());
             command(label, true, Action::SetEditor(editor.clone()))
