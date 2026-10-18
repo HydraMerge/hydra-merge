@@ -15,7 +15,16 @@ targets = [
 [advisories]
 # RustSec advisory database: a crate with a known vulnerability fails the check.
 # An accepted advisory goes into `ignore` with its id and the reason, never silently.
-ignore = []
+# The three below are "unmaintained" notices, not vulnerabilities (issued 2026-10-17). The crates
+# were merged into `zbus` 6.0.0. They reach only the Linux builds, through
+# eframe -> egui-winit -> accesskit_winit -> accesskit_unix -> atspi -> zbus 5, the screen reader
+# bridge. The newest accesskit_unix (0.24) and atspi (0.30) still depend on zbus 5, so nothing
+# can be upgraded yet. Drop these entries once that chain moves to zbus 6.
+ignore = [
+    { id = "RUSTSEC-2026-0370", reason = "zbus_names is unmaintained; merged into zbus 6, which accesskit_unix does not use yet" },
+    { id = "RUSTSEC-2026-0371", reason = "zvariant is unmaintained; merged into zbus 6, which accesskit_unix does not use yet" },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive is unmaintained; merged into zbus 6, which accesskit_unix does not use yet" },
+]
 
 [licenses]
 # Every license in the tree must be compatible with shipping the binary under MIT.
