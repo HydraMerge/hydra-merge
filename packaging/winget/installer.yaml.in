@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+
+PackageIdentifier: HydraMerge.HydraMerge
+PackageVersion: @VERSION@
+InstallerType: zip
+NestedInstallerType: portable
+NestedInstallerFiles:
+  - RelativeFilePath: hydra-merge.exe
+    PortableCommandAlias: hydra-merge
+Commands:
+  - hydra-merge
+ReleaseDate: @DATE@
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/HydraMerge/hydra-merge/releases/download/v@VERSION@/hydra-merge-v@VERSION@-x86_64-pc-windows-msvc.zip
+    InstallerSha256: @SHA_X86_64_WINDOWS@
+  - Architecture: arm64
+    InstallerUrl: https://github.com/HydraMerge/hydra-merge/releases/download/v@VERSION@/hydra-merge-v@VERSION@-aarch64-pc-windows-msvc.zip
+    InstallerSha256: @SHA_AARCH64_WINDOWS@
+ManifestType: installer
+ManifestVersion: 1.6.0

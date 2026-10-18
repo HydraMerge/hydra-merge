@@ -96,3 +96,27 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
+
+  # The package templates must always fill in, whatever the next release looks like.
+  packaging:
+    name: package templates
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fill the templates with made-up checksums
+        run: |
+          version=9.9.9
+          for target in aarch64-apple-darwin.zip x86_64-apple-darwin.zip aarch64-unknown-linux-gnu.tar.gz x86_64-unknown-linux-gnu.tar.gz aarch64-pc-windows-msvc.zip x86_64-pc-windows-msvc.zip; do
+            printf '%064d  hydra-merge-v%s-%s\n' 1 "$version" "$target"
+          done > SHA256SUMS
+          sh scripts/render-packages.sh "$version" SHA256SUMS out 2026-01-01
+          if grep -rnE '@[A-Z_0-9]+@' out; then
+            echo "a placeholder was left in a rendered file"
+            exit 1
+          fi
+          find out -name "*.rb" | grep -q .
+          find out -name '*.yaml' | grep -q .
+      - name: Ruby files parse and YAML files load
+        run: |
+          find out -name '*.rb' -exec ruby -c {} \;
+          find out -name '*.yaml' -exec ruby -ryaml -e 'YAML.load_file(ARGV[0])' {} \;

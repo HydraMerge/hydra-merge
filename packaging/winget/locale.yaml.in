@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+
+PackageIdentifier: HydraMerge.HydraMerge
+PackageVersion: @VERSION@
+PackageLocale: en-US
+Publisher: HydraMerge
+PublisherUrl: https://github.com/HydraMerge
+PublisherSupportUrl: https://github.com/HydraMerge/hydra-merge/issues
+PackageName: HydraMerge
+PackageUrl: https://github.com/HydraMerge/hydra-merge
+License: MIT
+LicenseUrl: https://github.com/HydraMerge/hydra-merge/blob/main/LICENSE
+ShortDescription: Git worktree and repository browser modelled on Sublime Merge
+Description: |-
+  HydraMerge lists every repository under your scan folder, every worktree of each with its
+  clean or modified state, and the history, changes and diff of the one you click. It creates
+  worktrees for local and remote branches, stages, commits, fetches, pulls and pushes.
+Moniker: hydra-merge
+Tags:
+  - git
+  - worktree
+  - gui
+  - diff
+  - version-control
+ReleaseNotesUrl: https://github.com/HydraMerge/hydra-merge/releases/tag/v@VERSION@
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

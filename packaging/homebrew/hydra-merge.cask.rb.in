@@ -1,0 +1,37 @@
+cask "hydra-merge" do
+  arch arm: "aarch64", intel: "x86_64"
+
+  version "@VERSION@"
+  sha256 arm:   "@SHA_AARCH64_APPLE@",
+         intel: "@SHA_X86_64_APPLE@"
+
+  url "https://github.com/HydraMerge/hydra-merge/releases/download/v#{version}/hydra-merge-v#{version}-#{arch}-apple-darwin.zip"
+  name "HydraMerge"
+  desc "Git worktree and repository browser modelled on Sublime Merge"
+  homepage "https://github.com/HydraMerge/hydra-merge"
+
+  livecheck do
+    url :url
+    strategy :github_latest
+  end
+
+  depends_on macos: :monterey
+
+  app "HydraMerge.app"
+
+  # The build is not notarized, so macOS refuses to open it while the download flag is set. The
+  # steps cannot name the app directory, so this clears the flag in the default one; a custom
+  # --appdir keeps the flag and the caveat below says how to clear it.
+  postflight_steps do
+    run "/usr/bin/xattr",
+        args:         ["-dr", "com.apple.quarantine", "/Applications/HydraMerge.app"],
+        must_succeed: false
+  end
+
+  zap trash: "~/Library/Application Support/hydra-merge"
+
+  caveats <<~EOS
+    The build is not notarized. With a custom --appdir, clear the download flag once:
+      xattr -dr com.apple.quarantine <appdir>/HydraMerge.app
+  EOS
+end

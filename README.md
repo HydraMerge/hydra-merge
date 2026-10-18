@@ -105,7 +105,16 @@ More on layouts, existing clones and settings: [docs/guide.md](docs/guide.md#pre
 
 ## Install
 
-Download the archive for your system from the [latest release](https://github.com/HydraMerge/hydra-merge/releases/latest).
+**Homebrew**:
+
+```
+brew install --cask hydramerge/tap/hydra-merge   # macOS
+brew install hydramerge/tap/hydra-merge          # Linux
+```
+
+The cask clears the quarantine flag below for you. See [Package managers](docs/packaging.md).
+
+**Or download** the archive for your system from the [latest release](https://github.com/HydraMerge/hydra-merge/releases/latest).
 Archives are named `hydra-merge-<tag>-<target>`, with the targets from the table under
 [Build and run](docs/guide.md#build-and-run), and `SHA256SUMS` lists their checksums:
 

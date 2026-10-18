@@ -1,0 +1,37 @@
+class HydraMerge < Formula
+  desc "Git worktree and repository browser modelled on Sublime Merge"
+  homepage "https://github.com/HydraMerge/hydra-merge"
+  url "https://github.com/HydraMerge/hydra-merge/releases/download/v@VERSION@/hydra-merge-v@VERSION@-x86_64-unknown-linux-gnu.tar.gz"
+  sha256 "@SHA_X86_64_LINUX@"
+  license "MIT"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
+  depends_on :linux
+
+  on_linux do
+    on_arm do
+      url "https://github.com/HydraMerge/hydra-merge/releases/download/v@VERSION@/hydra-merge-v@VERSION@-aarch64-unknown-linux-gnu.tar.gz"
+      sha256 "@SHA_AARCH64_LINUX@"
+    end
+  end
+
+  def install
+    bin.install "hydra-merge"
+  end
+
+  def caveats
+    <<~EOS
+      HydraMerge is a desktop window. It needs a graphical session (X11 or Wayland) and the
+      usual desktop libraries of your distribution. On macOS, install the cask instead:
+        brew install --cask hydramerge/tap/hydra-merge
+    EOS
+  end
+
+  test do
+    assert_predicate bin/"hydra-merge", :executable?
+  end
+end
