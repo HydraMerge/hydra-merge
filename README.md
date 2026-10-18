@@ -64,6 +64,29 @@ whichever one you click.
   <img src="docs/screenshots/palette-dark.png" alt="Command palette" width="720">
 </p>
 
+## A tour
+
+Every picture is HydraMerge itself, running on made-up repositories, branches and people.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/summary-dark.png" alt="Summary of a working copy"><br><sub><b>Work in place.</b> Staged, unstaged and new files with their diff, and a commit message.</sub></td>
+    <td width="50%"><img src="docs/screenshots/branch-menu-dark.png" alt="Right click on a branch"><br><sub><b>Create in one click.</b> A worktree, a sparse worktree, compare, merge or rebase from a branch.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/sparse-worktree-dark.png" alt="A sparse worktree"><br><sub><b>Sparse worktrees.</b> Only the folders you pick are written to disk; the card lists them.</sub></td>
+    <td width="50%"><img src="docs/screenshots/compare-dark.png" alt="Comparing two branches"><br><sub><b>Compare.</b> What a branch has that yours does not, as a merge request shows it.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/trust-card-dark.png" alt="A repository that is not trusted"><br><sub><b>Safe by design.</b> A repository that can run programs waits for your decision.</sub></td>
+    <td width="50%"><img src="docs/screenshots/date-format-dark.png" alt="Date format setting"><br><sub><b>Your dates.</b> Commit dates carry the year; pick Europe, US, ISO and more.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/filter-dark.png" alt="Filtering the history"><br><sub><b>Find things.</b> Filter the history by message, author, hash or branch.</sub></td>
+    <td width="50%"><img src="docs/screenshots/skin-nord.png" alt="The Nord skin"><br><sub><b>Yours.</b> Nine built-in skins, or your own as a small text file.</sub></td>
+  </tr>
+</table>
+
 ## Quick start
 
 1. [Install](#install) HydraMerge.

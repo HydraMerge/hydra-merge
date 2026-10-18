@@ -64,14 +64,22 @@ program. The folder picker uses the system dialog (`osascript`, `zenity`/`kdialo
 - **Open Repository** (+ next to the tabs, ⚙ or the palette) opens a window: type a path or press **Choose…** for
   the macOS folder picker. A `.bare` layout or a plain clone under the discovery roots opens as a tab; a reason
   why a folder cannot be opened is shown in the window.
+
+  ![Open Repository window](screenshots/open-repository-dark.png)
 - **Create a worktree** at `<repo_root>/<branch>` for a free local branch, or from a remote branch
   (`worktree add --track -b`). A branch already checked out elsewhere leads to its worktree instead.
+
+  ![Right click on a free branch: worktree, sparse worktree, compare, merge, rebase](screenshots/branch-menu-dark.png)
 - **Create a sparse worktree** (right click on a free local branch → Create Sparse Worktree…, or the palette):
   pick the top-level folders you need, and only those are written to disk (`git sparse-checkout`, cone mode;
   files at the root of the branch always are). In a large monorepo a worktree then costs the slice you work on,
   not the whole tree. The worktree's card lists its folders, and **Show All Files…** makes it a full worktree.
+
+  ![Pick the folders a sparse worktree holds](screenshots/sparse-dialog-dark.png)
 - **Create a local branch** from a remote branch (`git branch --track`) without a worktree.
 - **Remove** a clean, unlocked worktree after confirmation. Dirty or locked worktrees are refused.
+
+  ![Removing a worktree asks first](screenshots/confirm-remove-dark.png)
 - **Delete a remote branch** (`git push --delete <remote> refs/heads/<branch>`) after confirmation.
 - **Open** a worktree in your editor, Terminal or Finder. **⚙ → Open With** (or "Open With:" in the palette) picks
   the editor for Open and every "Open in …": Sublime Text (the `subl` CLI), Visual Studio Code, Cursor, Zed and
@@ -85,29 +93,43 @@ program. The folder picker uses the system dialog (`osascript`, `zenity`/`kdialo
   clean/modified dot, ⋯ for the shown worktree, ↻ Fetch / ↓ Pull / ↑ Push / Open (icons only in a window
   narrower than 1100 pt), and ⚙ settings (Rescan, Open Repository by Path…, Scan at Startup, Fetch Automatically,
   theme, Open With, Skin).
+
+  ![The gear menu](screenshots/settings-dark.png)
 - **Worktree menu** (⋯ in the toolbar and right click on a worktree in Locations, the same list): Open in
   <editor>, Open in Terminal, Reveal in Finder, Copy Path, Remove Worktree…. A Remove that cannot run says why
   (has changes, locked, not trusted, plain clone).
+
+  ![The worktree menu](screenshots/worktree-menu-dark.png)
 - **Repositories** column: every scanned repository; 🔍 or ⌘L filters it. An orange dot marks a repository with
   uncommitted changes in some worktree, a blue dot one that is open as a tab.
+
+  ![Narrowing the list of repositories](screenshots/repositories-filter-dark.png)
 - **Worktree state** in Locations: a green dot (clean), orange dot (changes), triangle (folder is not at
   `<repo_root>/<branch>`), padlock (locked), ring (status still being read). Names too long for the column are
   shortened with `…` in the middle, so the end of a branch name stays visible.
+
+  ![A clean worktree](screenshots/worktree-dark.png)
 - **Locations**: Worktrees, Branches, Remotes, Tags, Stashes, Submodules. Sections collapse, branch names with
   `/` are grouped into folders, and a filter narrows the list. Right click offers what fits the item: create a
   worktree or local branch, compare, delete a remote branch, open, copy the name or path.
+
+  ![A remote branch: create a worktree or delete it](screenshots/remote-branch-dark.png)
 - **Commit list**: commits of all branches with the branch graph (merges, lanes), ref badges (checked-out branch,
   local, remote, tag), author, date and file count. The top row is the working copy ("2 unstaged files").
   The history column is resized by dragging its divider. Right click a commit to copy its hash or subject.
 - **Summary** of the working copy: commit message field, author from `git config`, Commit button (its tooltip says
   what is missing), and collapsible Staged / Unstaged / Untracked sections, each with its diff. A clean worktree
   shows a card instead: branch, path, HEAD, and Open in <editor> / Terminal / Finder / Copy Path.
+
+  ![Staged, unstaged and new files with their diff](screenshots/summary-dark.png)
 - **Commit view**: subject, author, hash, files and the patch.
 - **Diff**: line numbers, added and removed lines, syntax colours for common languages and config formats
   (Rust, Go, Python, JS/TS, YAML, HCL/Terraform, JSON, SQL, shell, …). Only visible lines are drawn.
 - **Skins** (⚙ → Skin, or "Skin:" in the palette): Auto (Merge Light / Merge Dark, following the system and the
   light/dark switch), Merge Light, Merge Dark, Mariana, One Dark, Monokai, Nord, Solarized Dark, Solarized Light,
   GitHub Light, and your own skin files — see [Skins](#skins).
+
+  ![The Nord skin](screenshots/skin-nord.png)
 
 ### Changes and sync
 - **Stage / Unstage / Stage All / Discard** (tracked files, after confirmation) and **Commit**.
@@ -120,15 +142,23 @@ program. The folder picker uses the system dialog (`osascript`, `zenity`/`kdialo
   sign in once; the app never shows a credential prompt.
 - **Stashes** can be applied or dropped (drop after confirmation).
 
+  ![A stash: apply or drop](screenshots/stash-dark.png)
+
 ### Finding things
 - **Command palette** (click the field or ⌘⇧P): fuzzy search over every action — sync, open, stage, commit,
   switch repository or worktree, create a worktree, compare, delete a remote branch, settings. An empty query
   shows the last commands run.
+
+  ![The command palette](screenshots/palette-dark.png)
 - **Back / Forward** (◀ ▶, ⌘[ / ⌘]) through the repositories, worktrees, commits and Locations items shown before.
 - **Filter commits** (🔍 in the Commits header or ⌘F) by message, author, hash or branch; "Search all history"
   runs `git log --grep` over every branch.
+
+  ![Filtering the history](screenshots/filter-dark.png)
 - **Compare** the shown worktree's branch with another branch: `git diff <current>...<other>`, as a merge request
   shows it.
+
+  ![Comparing two branches](screenshots/compare-dark.png)
 
 ### Background
 - **Outside changes** (a worktree added, moved or removed in a terminal, a branch moved, something staged) are
@@ -138,6 +168,8 @@ program. The folder picker uses the system dialog (`osascript`, `zenity`/`kdialo
   year. Choose Europe (`Wed, 15 Nov 2023, 15:07`), Europe numeric (`15.11.2023 15:07`), US
   (`Wed, Nov 15, 2023, 3:07 PM`), US numeric (`11/15/2023 3:07 PM`) or ISO 8601 (`2023-11-15 15:07`). The date is
   shown in the author's time zone; the choice is kept in `session.txt`.
+
+  ![Date Format in the gear menu](screenshots/date-format-dark.png)
 - **Auto-fetch** (⚙ → Fetch Automatically): `git fetch --all` of the open repository every 5 minutes; a failure
   only shows in the status line. A repository that is not trusted (below) is skipped.
 - **Trust**: a repository that arrives as a whole folder (an archive, a copy) brings its own git config and hooks,
@@ -149,6 +181,8 @@ program. The folder picker uses the system dialog (`osascript`, `zenity`/`kdialo
   in an editor or Terminal still works. **Trust this repository** remembers the decision in `session.txt` for exactly
   that config: change a value, add a hook, and you are asked again. ⌘⇧P → *Stop Trusting This Repository* takes it
   back. Repositories without such settings need no decision.
+
+  ![A repository that is not trusted yet](screenshots/trust-card-dark.png)
 - **Repositories are data**: every git call also switches off `core.fsmonitor` and `log.showSignature` (a plain read
   would otherwise run a program from the repository's config), diffs run without `textconv`, and file names from
   Stage, Unstage and Discard are matched literally (`--literal-pathspecs`).
@@ -240,6 +274,8 @@ Settings → Log Level chooses error, warn, info or debug. A level also writes t
 cargo test
 cargo clippy --all-targets -- -D warnings
 cargo test --test ui_shots -- --ignored   # renders the window offscreen into target/ui-shots/ (GPU required)
+DOCS_SHOTS_OUT=docs/screenshots cargo test --test docs_shots -- --ignored   # redraws the pictures of this guide (GPU required)
+python3 scripts/optimize-screenshots.py                                    # then makes them four times smaller (needs Pillow)
 ```
 
 The tests use temporary repositories only and a fake editor CLI; they do not read `~/repos`, `/Applications`,
