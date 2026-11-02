@@ -85,6 +85,21 @@ jobs:
           path: target/${{ matrix.target }}/release/${{ matrix.artifact }}
           if-no-files-found: error
 
+  architecture:
+    name: easement
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rust-analyzer
+      - name: Check architecture
+        uses: mokevnin/easement@main
+        with:
+          diff: ${{ github.event_name == 'pull_request' && 'origin/main' || '' }}
+
   # Known vulnerabilities (RustSec), licenses and crate sources, as configured in deny.toml.
   # The advisory database grows daily, so this job can turn red without a code change:
   # update the crate, or add the advisory to `ignore` in deny.toml with the reason.

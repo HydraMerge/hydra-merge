@@ -1,0 +1,52 @@
+version: 1
+
+# One-off packaging scripts, not part of the app graph.
+exclude:
+  - "**/*.py"
+
+tests: auto
+
+# src/lib.rs only declares modules. It stays outside components so the crate
+# root is not a dependency of every layer.
+#
+# git, discover, trust and model import each other today. They stay one
+# component until that cycle is broken in the code. The gate that holds now
+# is: the window does not get imported by the domain.
+components:
+  bin:
+    in: src/main.rs
+  ui:
+    in:
+      - src/app
+      - src/diff_view.rs
+      - src/skin
+  domain:
+    in:
+      - src/datefmt.rs
+      - src/diff.rs
+      - src/discover.rs
+      - src/git
+      - src/graph.rs
+      - src/highlight
+      - src/log.rs
+      - src/model.rs
+      - src/os.rs
+      - src/pool.rs
+      - src/session.rs
+      - src/theme.rs
+      - src/trust.rs
+      - src/update.rs
+      - src/watch.rs
+
+no_cycles: [ui, domain]
+
+rules:
+  bin:
+    may_depend_on: [ui, domain]
+    because: the binary opens the window and reads config
+  ui:
+    may_depend_on: [domain]
+    because: the window calls git, discovery and shared types; the domain does not import the window
+  domain:
+    may_depend_on: []
+    because: git and the types it shares with the window do not import UI modules
